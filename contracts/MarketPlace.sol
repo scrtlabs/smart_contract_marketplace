@@ -21,6 +21,7 @@ contract MarketPlace is MarketPlaceInterface
 		bytes32 name;
 		uint monthlyPrice;
 		address owner;
+		bool isData;
 	}
 	/* A Provider is unique per address*/
 	struct DataProvider{
@@ -38,14 +39,16 @@ contract MarketPlace is MarketPlaceInterface
 	/* Subscriber is Unique per address*/
 	struct Subscriber{
 		address subscriber;
-		SubscribedDataSource[] sources;
+		bool isSubscriber;
+		SubscribedDataSource[] sourcesList;
+		mapping(bytes32=>SubscribedDataSource) sourcesMap;
 	}
 	/* State variables */
 	
 	// Enigma Token
 	ERC20 public mToken;
 	// Fixed time defined in the C'tor (unixTimeStamp)
-	uint private mFixedSubscriptionPeriod;
+	uint public mFixedSubscriptionPeriod;
 	// Mapping addres owner to DataProvider - Names must be unique
 	mapping(address => DataProvider) mDataProviders;
 	// Mapping Address to Subscription
@@ -64,12 +67,36 @@ contract MarketPlace is MarketPlaceInterface
 	dataSourceNameExist(_dataSourceName) 
 	returns (bool)
 	{
+		string memory testData = "Enterd function subscribe";
+		TestLog(msg.sender,msg.sender, testData);
+		// pay and verify
 		address providerAddress = mNameMap[_dataSourceName];
-		if(!isNewProvider(providerAddress))
+		require(!isNewProvider(providerAddress));
+		DataSource ds = mDataProviders[providerAddress].sourcesMap[_dataSourceName];
+		require(ds.isData);
+		SubscribedDataSource storage sds;
+		require(mToken.transfer(providerAddress,ds.monthlyPrice));
+		
+		// update subscription details
+		sds.dataSource = ds;
+		sds.startTime = now; 
+		sds.endTime = now + mFixedSubscriptionPeriod;
+
+		if(isNewSubscriber(msg.sender))
 		{
-			return true;//TODO::
+			Subscriber subscriber;
+			subscriber.subscriber = msg.sender;
+			subscriber.isSubscriber = true;
+			subscriber.sourcesList.push(sds);
+			subscriber.sourcesMap[_dataSourceName] = sds;		
+			mSubscribers[msg.sender] = subscriber;
 		}
-		//function transfer(address to, uint tokens) public returns (bool success);
+		else
+		{
+			mSubscribers[msg.sender].sourcesList.push(sds);
+			mSubscribers[msg.sender].sourcesMap[_dataSourceName] = sds;
+		}
+		Subscribed(msg.sender,_dataSourceName, providerAddress, ds.monthlyPrice, true);
 		return true;
 	}
 	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) 
@@ -86,6 +113,7 @@ contract MarketPlace is MarketPlaceInterface
 		ds.name = _dataSourceName;
 		ds.monthlyPrice = _price;
 		ds.owner = _dataOwner;
+		ds.isData = true;
 
 		if(isNewProvider(_dataOwner)) // New Provider (Address identifier)
 		{
@@ -105,14 +133,19 @@ contract MarketPlace is MarketPlaceInterface
 		Registered(_dataOwner, _dataSourceName, _price, true);
 		return true;
 	}
-	function getOwnerAddressByDataSourceName(bytes32 _dataSourceName) public view returns(address){
-		return mNameMap[_dataSourceName];
-	}
+
 	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool)
 	{
 		require(_subscriber != address(0));
 		return true;
 	}
+
+	function getOwnerAddressByDataSourceName(bytes32 _dataSourceName) public view returns(address){
+		return mNameMap[_dataSourceName];
+	}
+	/*
+		Internal Functions
+	*/
 	function isNewProvider(address _testProvider) internal view returns (bool)
 	{
 		if(mDataProviders[_testProvider].isProvider)
@@ -120,6 +153,16 @@ contract MarketPlace is MarketPlaceInterface
 		else
 			return true;
 	}
+	function isNewSubscriber(address _testSubscriber) internal view returns (bool)
+	{
+		if(mSubscribers[_testSubscriber].isSubscriber)
+			return false;
+		else
+			return true;
+	}
+	/*
+		Modifiers
+	*/
 	modifier uniqueDataSourceName(bytes32 _testName)
 	{
 		require(mNameMap[_testName]==0);
@@ -127,7 +170,7 @@ contract MarketPlace is MarketPlaceInterface
 	}
 	modifier validPrice(uint _testPrice)
 	{
-		require(testPrice>=0);
+		require(_testPrice>=0);
 		_;
 	}
 	modifier dataSourceNameExist(bytes32 _testName)
@@ -138,5 +181,11 @@ contract MarketPlace is MarketPlaceInterface
 	/* TO BE DELETED */
 	function getTest() public view returns (address){
 		return mToken.getTest();
+	}
+	function balanceOf(address who) public constant returns (uint256){
+		return mToken.balanceOf(who);
+	}
+	function transfer(address to, uint256 value) public returns (bool){
+		return mToken.transfer(to,value);
 	}
 }

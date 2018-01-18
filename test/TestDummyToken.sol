@@ -20,5 +20,6 @@ contract TestDummyToken {
     Assert.equal(result,true,"Token Transfer didnt happend correctly");
     uint expected = 10;
     Assert.equal(token.balanceOf(to),expected, "Recieving balance not as expected after transfer");
+    Assert.equal(token.balanceOf(tx.origin),10000-expected, "Senders balance not as expected after transfer"); 
   }
 }
