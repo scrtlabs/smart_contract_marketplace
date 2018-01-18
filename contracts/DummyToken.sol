@@ -26,18 +26,19 @@ contract DummyToken is ERC20Interface
  {
  	return total_supply;
  }
- function balanceOf(address tokenOwner) public constant returns (uint balance)
+
+ function balanceOf(address who) public constant returns (uint256)
  {
- 	return balances[tokenOwner];
+ 	return balances[who];
  }
- function transfer(address to, uint tokens) public returns (bool success)
+ function transfer(address to, uint value) public returns (bool)
  {
  	// 
  	//require(balances[msg.sender] >= tokens);
  	test = msg.sender;
- 	balances[msg.sender] -= tokens;
- 	balances[to] += tokens;
- 	Transfer(msg.sender, to, tokens);
+ 	balances[msg.sender] -= value;
+ 	balances[to] += value;
+ //	Transfer(msg.sender, to, value);
  	return true;
  }
  function getTest() public returns (address){

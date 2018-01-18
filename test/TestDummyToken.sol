@@ -3,7 +3,6 @@ pragma solidity ^0.4.18;
 import "truffle/Assert.sol";
 import "truffle/DeployedAddresses.sol";
 import "../contracts/DummyToken.sol";
-import "../contracts/MarketPlace.sol";
 
 
 contract TestDummyToken {

@@ -6,11 +6,41 @@ import "../contracts/DummyToken.sol";
 import "../contracts/MarketPlace.sol";
 
 
-contract TestMarketPlace {
-  function testNewMarletPlaceImplementation() public{
+contract TestMarketPlace 
+{
+  function testMarketPlaceRegistration() public
+  {
     DummyToken token = DummyToken(DeployedAddresses.DummyToken());
     MarketPlace marketPlace = new MarketPlace(DeployedAddresses.DummyToken(),now);
-    bool result = marketPlace.subscribe(bytes32("a"));
-    Assert.equal(result,true,"test didnt return true");
+    bytes32 dataSource = "name1";
+    bool result = marketPlace.register(dataSource,150,msg.sender);
+    address addr = marketPlace.getOwnerAddressByDataSourceName(dataSource);
+    Assert.equal(result,true,"Registration didnt work");
+    Assert.equal(addr,msg.sender,"Datasource dont exist after registration");
   }
+
+  function testMarketPlace2NameRegistration() public 
+  {
+    DummyToken token = DummyToken(DeployedAddresses.DummyToken());
+    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.DummyToken(),now);
+    bytes32 name1 = "name1";
+    bytes32 name2 = "name2";
+    bool name1Result = marketPlace.register(name1,150,msg.sender);
+    bool name2Result = marketPlace.register(name2,100,msg.sender);
+    Assert.equal(name1Result,true,"name1 couldnt register");
+    Assert.equal(name2Result,true,"name2 couldnt register");
+    address addr1 = marketPlace.getOwnerAddressByDataSourceName(name1);
+    address addr2 = marketPlace.getOwnerAddressByDataSourceName(name2);
+    Assert.equal(addr1,msg.sender,"name1 address didnt return");
+    Assert.equal(addr2,msg.sender,"name2 address didnt return");
+  }
+  // throws error since the name is not unique and revert (should be tested in outside solidity)
+  // function testMarketPlaceSameNameRegistration() public{
+  //   DummyToken token = DummyToken(DeployedAddresses.DummyToken());
+  //   MarketPlace marketPlace = new MarketPlace(DeployedAddresses.DummyToken(),now);
+  //   bytes32 dataSource = "name1";
+  //   marketPlace.register(dataSource,150,msg.sender);
+  //   bool result = marketPlace.register(dataSource,162,msg.sender);
+  //   Assert.equal(result,false,"Same name was registred twice");
+  // }
 }
