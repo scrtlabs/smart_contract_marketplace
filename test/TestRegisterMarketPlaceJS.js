@@ -5,23 +5,26 @@ var utils = require("./utils");
 
 contract('MarketPlace',(accounts)=>{
 
+
   // #1
+if (true)
   it("Should return the EnigmaToken owner balance via the MarketPlace contract", ()=>{
     return MarketPlace.deployed().then(instance=>{return instance.balanceOf.call(accounts[0])}).
       then((balance)=>{assert.equal(balance,10000,"Owner Balance is incorrect");});
   });
-
   
 // #2
 // works fine alone, conflict with #3
 //params{dataName,price,ownerAddress,fromTX}
-  // it("Should Register a new data Provider",()=>{
-  //   MarketPlace.deployed().then(instance=>{
-  //     utils.registerAndThen(instance,{dataName:"DataSet",price:100,ownerAddress:accounts[1],fromTX:accounts[0]},(marketPlace,p)=>{});
-  //   });
-  // });
+if (true)
+  it("Should Register a new data Provider",()=>{
+    MarketPlace.deployed().then(instance=>{
+      utils.registerAndThen(instance,{dataName:"DataSet1",price:100,ownerAddress:accounts[1],fromTX:accounts[0]},(marketPlace,p)=>{});
+    });
+  });
 
   // #3
+if(false)
   it("Should Register 2 names under the same address(owner)", ()=>{
     var addr1_owner,addr2_owner;
     var registerOne = {dataName: "DataSet1",price:100,ownerAddress:accounts[1],fromTX: accounts[0]};
@@ -46,7 +49,8 @@ contract('MarketPlace',(accounts)=>{
     });
   });
   // #4 
-  // couple with #3 (Dataset namedependency)
+  // coupled with #2 (Dataset namedependency)
+if(true)
   it("Should get Owner Name",()=>{
     var dataSet = "DataSet1";
     var addr1 = accounts[1];
@@ -57,8 +61,10 @@ contract('MarketPlace',(accounts)=>{
     });
   });
   
-  //function getDataSource(bytes32 _dataSourceName) public view returns(address,bytes32,uint,bool)
+
   // #5
+  // coupled with #2
+if(true)
   it("Should get data source details",()=>{
     var dataSet = "DataSet1";
     var addrBase = accounts[1];
@@ -67,52 +73,78 @@ contract('MarketPlace',(accounts)=>{
       return instance.getOwnerFromName.call(dataSet);
     }).then((addr)=>{
       assert.equal(addr,addrBase);
-      console.log("Address actually match : " , addr);
-      console.log("Should be -> " , addrBase);
       return marketPlace.getDataSource(dataSet);
     }).then(dataSourceDetails=>{
-      console.log(dataSourceDetails);
+      var owner = dataSourceDetails[0];
+      var price = dataSourceDetails[1].toNumber();
+      var volume = dataSourceDetails[2].toNumber();
+      var subscriptions = dataSourceDetails[3].toNumber();
+      assert.equal(owner,addrBase,"Address of the data source do not match");
+      assert.equal(price, 100 , "Prices of the data source do not match" );
+      assert.equal(volume,0,"Volumes of the data source don't match");
+      assert.equal(subscriptions,0,"Subsction numbers of the data source do not match ");
     });
   });
-  // SHOULD UPDATE - approves-> allowance - > TODO:: subscribe where commented
-  // it("Should subscribe to a dataProvider and validate transaction",()=>{
-  //   var subscriber = accounts[0];
-  //   var provider = accounts[1];
-  //   var allowedAmount = 500;
-  //   return MarketPlace.deployed().then(instance=>{
-  //     marketPlace = instance;
-  //   }).then(()=>{
-  //     return EnigmaToken.deployed().then((instance)=>{
-  //       enigmaToken = instance;
-  //       return enigmaToken.approve(marketPlace.address,allowedAmount,{from:subscriber});
-  //     }).then(()=>{
-  //       utils.assertEvent(enigmaToken,{event:"Approval"},(event=>{
-  //         var approved =  utils.assertApprovalEvent(event,{amount:allowedAmount,owner:subscriber,spender:marketPlace.address});
-  //         assert.equal(approved,true,"Allowance not completley allowed.");
-  //           new Promise((resolve, reject)=> {
-  //             var res = enigmaToken.allowance.call(subscriber,marketPlace.address);
-  //             resolve(res);
-  //           }).then(allowanceAmount=>{
-  //               assert.equal(allowanceAmount,allowedAmount,"allowace did not update in enigmaToken");  
-  //               // here i know that actually allowed to transfer and can subscribe to some data source
-  //              // return marketPlace.atomicTransfer(subscriber, provider, allowanceAmount);
-  //           }).then(tx=>{
-  //               utils.assertEvent(marketPlace,{event:"SubscriptionPaid"},(event)=>{
-  //                 new Promise((resolve,reject)=>{
-  //                   // here should grab the finished subscription event.
-  //                   //var res = enigmaToken.balanceOf.call(provider);
-  //                   resolve(res);
-  //                 }).then(balance=>{
-  //                   assert.equal(balance.toNumber(),allowedAmount,"Provider did not reviece the amount subcribed for");
-  //                 });
-  //               });
-  //           });
-  //       }));
-  //     });
-  //   });
-  // });
 
+    // #6
+    // couple with #2
+  if(true)
+    it("Should update a data source price ",()=>{
+      var newPrice = 25;
+      var dataSet = "DataSet1";
+      var owner = accounts[0];
+      return MarketPlace.deployed().then(instance=>{
+        marketPlace = instance;
+        return marketPlace.updateDataSourcePrice(dataSet,newPrice, {from:owner});
+      }).then(tx=>{
+        utils.assertEvent(marketPlace,{event:"PriceUpdate"},(event=>{
+          var afterPrice = event[0].args.newPrice;
+          var afterName = event[0].args.dataSourceName;
+          var afterEditor = event[0].args.editor;
+          assert.equal(afterPrice,newPrice,"New Price did not update");
+          assert.equal(utils.toAscii(afterName),dataSet," Data source name dont match");
+          assert.equal(afterEditor,owner,"Edited not by owner");
+        }));
+      })
+    }); 
 
+    // #7 coule with #2
+if(true)
+  it("Should Approve and Subscribe to the marketplace provider",()=>{
+    var provider = accounts[1];
+    var subscriber = accounts[0];
+    var dataPrice = 25;
+    var dataSetName = "DataSet1";
+    return EnigmaToken.deployed().
+      then((instance)=>{enigmaToken = instance; return MarketPlace.deployed();}).
+        then((instance)=>{marketPlace = instance; return enigmaToken.approve(marketPlace.address,dataPrice,{from:subscriber});}).
+          then(tx=>{utils.assertEvent(enigmaToken,{event:"Approval"},(event)=>{
+              var res = marketPlace.subscribe(dataSetName,{from:subscriber});
+              utils.assertEvent(marketPlace,{event:"Subscribed"},event=>{ 
+                new Promise((resolve,reject)=>{
+                  var result= marketPlace.checkAddressSubscription.call(subscriber,dataSetName);
+                  resolve(result);
+                }).then((subscriptionInfo)=>{
+                    var resAddr = subscriptionInfo[0];
+                    var resName = utils.toAscii(subscriptionInfo[1]);
+                    var resPrice = subscriptionInfo[2];
+                    var resStartTime = subscriptionInfo[3];
+                    var resEndTime = subscriptionInfo[4];
+                    assert.equal(resAddr,subscriber,"Addresses dont match in subscription info");
+                    assert.equal(resName,dataSetName, "Names dont match in the subscription info");
+                    assert.equal(resPrice,dataPrice,"Prices dont match in the subscription info");
+                    //TODO:: check valid subscription time
+                });
+              });
+          })});
+  }); 
+  // #8 coupled with #7
+if(true)
+  it("Should validate provider was paid",()=>{
+    var provider = accounts[0];
+    return EnigmaToken.deployed().then((instance)=>{enigmaToken = instance; return enigmaToken.balanceOf.call(provider);}).
+      then(balance=>{console.log(balance.toNumber())});
+  });
 });
 
 

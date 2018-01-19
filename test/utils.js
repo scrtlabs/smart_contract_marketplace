@@ -51,10 +51,6 @@ module.exports = {
       var owner = event[0].args.owner;
       var spender = event[0].args.spender;
       var amount = event[0].args.value.toNumber();
-      console.log("approval event details:");
-      console.log("owner: ", owner);
-      console.log("spemder: ", spender);
-      console.log("amount: ", amount);
       assert.equal(params.amount,amount,"allowed amount is not corrent");
       assert.equal(params.owner,owner,"owner address is not correct");
       assert.equal(params.spender,spender,"spender address is not correct");
