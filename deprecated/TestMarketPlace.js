@@ -186,3 +186,41 @@ function assertRegistrationEvent(event,baseParams,successRegister){
   //         }));        
   //       }));
   // });
+
+
+//  working perfectly but atomicTransfer is now internal and safeTransfer....
+// this test subscribe(payment) 
+  //   it("Should subscribe to a dataProvider and validate transaction",()=>{
+  //   var subscriber = accounts[0];
+  //   var provider = accounts[1];
+  //   var allowedAmount = 500;
+  //   return MarketPlace.deployed().then(instance=>{
+  //     marketPlace = instance;
+  //   }).then(()=>{
+  //     return EnigmaToken.deployed().then((instance)=>{
+  //       enigmaToken = instance;
+  //       return enigmaToken.approve(marketPlace.address,allowedAmount,{from:subscriber});
+  //     }).then(()=>{
+  //       utils.assertEvent(enigmaToken,{event:"Approval"},(event=>{
+  //         var approved =  assertApprovalEvent(event,{amount:allowedAmount,owner:subscriber,spender:marketPlace.address});
+  //         assert.equal(approved,true,"Allowance not completley allowed.");
+  //           new Promise((resolve, reject)=> {
+  //             var res = enigmaToken.allowance.call(subscriber,marketPlace.address);
+  //             resolve(res);
+  //           }).then(allowanceAmount=>{
+  //               assert.equal(allowanceAmount,allowedAmount,"allowace did not update in enigmaToken");  
+  //              return marketPlace.atomicTransfer(subscriber, provider, allowanceAmount);
+  //           }).then(tx=>{
+  //               utils.assertEvent(marketPlace,{event:"SubscriptionPaid"},(event)=>{
+  //                 new Promise((resolve,reject)=>{
+  //                   var res = enigmaToken.balanceOf.call(provider);
+  //                   resolve(res);
+  //                 }).then(balance=>{
+  //                   assert.equal(balance.toNumber(),allowedAmount,"Provider did not reviece the amount subcribed for");
+  //                 });
+  //               });
+  //           });
+  //       }));
+  //     });
+  //   });
+  // });

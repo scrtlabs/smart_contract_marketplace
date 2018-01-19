@@ -14,7 +14,7 @@ contract TestMarketPlace
     MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
     bytes32 dataSource = "name1";
     bool result = marketPlace.register(dataSource,150,msg.sender);
-    address addr = marketPlace.getOwnerAddressByDataSourceName(dataSource);
+    address addr = marketPlace.getOwnerFromName(dataSource);
     Assert.equal(result,true,"Registration didnt work");
     Assert.equal(addr,msg.sender,"Datasource dont exist after registration");
   }
@@ -29,8 +29,8 @@ contract TestMarketPlace
     bool name2Result = marketPlace.register(name2,100,msg.sender);
     Assert.equal(name1Result,true,"name1 couldnt register");
     Assert.equal(name2Result,true,"name2 couldnt register");
-    address addr1 = marketPlace.getOwnerAddressByDataSourceName(name1);
-    address addr2 = marketPlace.getOwnerAddressByDataSourceName(name2);
+    address addr1 = marketPlace.getOwnerFromName(name1);
+    address addr2 = marketPlace.getOwnerFromName(name2);
     Assert.equal(addr1,msg.sender,"name1 address didnt return");
     Assert.equal(addr2,msg.sender,"name2 address didnt return");
   }

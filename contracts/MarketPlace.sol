@@ -67,8 +67,13 @@ contract MarketPlace is MarketPlaceInterface
 	// Names map - works like a hashshet.
 	mapping(bytes32 => address) mNameMap;
 
+	/*delete variables */
+	bytes32 testBytes;
+	bool testChanged ;
+
 	function MarketPlace(address _tokenAddress, uint _fixedSubscriptionPeriod) public 
 	{
+		testChanged = false;
 		mFixedSubscriptionPeriod = _fixedSubscriptionPeriod;
 		mToken = IERC20(_tokenAddress);
 	}
@@ -78,6 +83,7 @@ contract MarketPlace is MarketPlaceInterface
 	dataSourceNameExist(_dataSourceName) 
 	returns (bool)
 	{
+
 		string memory testData = "Enterd function subscribe";
 		TestLog(msg.sender,msg.sender, testData);
 		// pay and verify
@@ -86,7 +92,7 @@ contract MarketPlace is MarketPlaceInterface
 		DataSource ds = mDataProviders[providerAddress].sourcesMap[_dataSourceName];
 		require(ds.isData);
 		SubscribedDataSource storage sds;
-		require(mToken.transfer(providerAddress,ds.monthlyPrice));
+		require(safeTransfer(msg.sender,providerAddress,ds.monthlyPrice));
 		
 		// update subscription details
 		sds.dataSource = ds;
@@ -116,6 +122,9 @@ contract MarketPlace is MarketPlaceInterface
 	uniqueDataSourceName(_dataSourceName) 
 	returns (bool)
 	{
+				//TODO:: delete
+		testBytes = _dataSourceName;
+		testChanged = true;
 		require(_dataOwner != address(0));
 
 		// create a data source
@@ -151,8 +160,14 @@ contract MarketPlace is MarketPlaceInterface
 		return true;
 	}
 
-	function getOwnerAddressByDataSourceName(bytes32 _dataSourceName) public view returns(address){
+	function getOwnerFromName(bytes32 _dataSourceName) public view returns(address)
+	{
 		return mNameMap[_dataSourceName];
+	}
+	function getDataSource(bytes32 _dataSourceName) public view returns(address,bytes32,bool)
+	{
+		address owner = mNameMap[_dataSourceName];
+		return (owner,testBytes,testChanged);
 	}
 	/*
 		Internal Functions
@@ -170,6 +185,13 @@ contract MarketPlace is MarketPlaceInterface
 			return false;
 		else
 			return true;
+	}
+	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
+		require(address(_from) != 0 && address(_to)!=0);
+		require(mToken.allowance(_from,address(this)) >= _amount);
+		require(mToken.transferFrom(_from,_to,_amount));
+		SubscriptionPaid(_from, _to, _amount);
+		return true;
 	}
 	/*
 		Modifiers
@@ -199,11 +221,5 @@ contract MarketPlace is MarketPlaceInterface
 	function transfer(address to, uint256 value) public returns (bool){
 		return mToken.transfer(to,value);
 	}
-	function atomicTransfer(address _from, address _to, uint256 _amount) public returns (bool){
-		require(address(_from) != 0 && address(_to)!=0);
-		require(mToken.allowance(_from,address(this)) >= _amount);
-		require(mToken.transferFrom(_from,_to,_amount));
-		SubscriptionPaid(_from, _to, _amount);
-		return true;
-	}
+
 }
