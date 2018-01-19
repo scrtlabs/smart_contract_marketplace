@@ -124,7 +124,7 @@ if(true)
                 new Promise((resolve,reject)=>{
                   var result= marketPlace.checkAddressSubscription.call(subscriber,dataSetName);
                   resolve(result);
-                }).then((subscriptionInfo)=>{
+                }).then(subscriptionInfo=>{
                     var resAddr = subscriptionInfo[0];
                     var resName = utils.toAscii(subscriptionInfo[1]);
                     var resPrice = subscriptionInfo[2];
@@ -134,21 +134,23 @@ if(true)
                     assert.equal(resName,dataSetName, "Names dont match in the subscription info");
                     assert.equal(resPrice,dataPrice,"Prices dont match in the subscription info");
                     //TODO:: check valid subscription time
-                });
+                }).then(()=>{return enigmaToken.balanceOf.call(provider);}).
+                    then(balance=>{assert.equal(balance.toNumber(),dataPrice,"Providers balance isnt updated");}).
+                      then(()=>{return marketPlace.getDataSource.call(dataSetName);}).
+                          then(dataSourceInfo=>{
+                            console.log(JSON.stringify(dataSourceInfo,null,2));
+                            var owner = dataSourceInfo[0];
+                            var price = dataSourceInfo[1].toNumber();
+                            var volume = dataSourceInfo[2].toNumber();
+                            var subscriptions = dataSourceInfo[3].toNumber();
+                            var isSource = dataSourceInfo[4];
+                            assert.equal(owner,provider,"Address of the data source do not match");
+                            assert.equal(price, dataPrice , "Prices of the data source do not match" );
+                            assert.equal(volume,dataPrice,"Volumes of the data source don't match");
+                            assert.equal(subscriptions,1,"Subsction numbers of the data source do not match ");
+                            assert.equal(isSource,true,"Subscription is not source.")
+                          });
               });
           })});
   }); 
-  // #8 coupled with #7
-if(true)
-  it("Should validate provider was paid",()=>{
-    var provider = accounts[0];
-    return EnigmaToken.deployed().then((instance)=>{enigmaToken = instance; return enigmaToken.balanceOf.call(provider);}).
-      then(balance=>{console.log(balance.toNumber())});
-  });
-});
-
-
-/***********************************************************************************/
-/* Util functions 
-/***********************************************************************************/
-
+}); 
