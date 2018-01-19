@@ -3,13 +3,24 @@ pragma solidity ^0.4.18;
 
 import "./MarketPlaceInterface.sol";
 
-contract ERC20 {
-  uint256 public totalSupply;
+
+contract IERC20 {
   function balanceOf(address who) public constant returns (uint256);
   function transfer(address to, uint256 value) public returns (bool);
+  function allowance(address owner, address spender) public constant returns (uint256);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
+  function approve(address spender, uint256 value) public returns (bool);
   function getTest() public view returns (address);
   event Transfer(address indexed from, address indexed to, uint256 value);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
 }
+// contract ERC20 {
+//   uint256 public totalSupply;
+//   function balanceOf(address who) public constant returns (uint256);
+//   function transfer(address to, uint256 value) public returns (bool);
+//   function getTest() public view returns (address);
+//   event Transfer(address indexed from, address indexed to, uint256 value);
+// }
 
 
 contract MarketPlace is MarketPlaceInterface
@@ -46,7 +57,7 @@ contract MarketPlace is MarketPlaceInterface
 	/* State variables */
 	
 	// Enigma Token
-	ERC20 public mToken;
+	IERC20 public mToken;
 	// Fixed time defined in the C'tor (unixTimeStamp)
 	uint public mFixedSubscriptionPeriod;
 	// Mapping addres owner to DataProvider - Names must be unique
@@ -59,7 +70,7 @@ contract MarketPlace is MarketPlaceInterface
 	function MarketPlace(address _tokenAddress, uint _fixedSubscriptionPeriod) public 
 	{
 		mFixedSubscriptionPeriod = _fixedSubscriptionPeriod;
-		mToken = ERC20(_tokenAddress);
+		mToken = IERC20(_tokenAddress);
 	}
 
 	function subscribe(bytes32 _dataSourceName) 
@@ -187,5 +198,12 @@ contract MarketPlace is MarketPlaceInterface
 	}
 	function transfer(address to, uint256 value) public returns (bool){
 		return mToken.transfer(to,value);
+	}
+	function atomicTransfer(address _from, address _to, uint256 _amount) public returns (bool){
+		require(address(_from) != 0 && address(_to)!=0);
+		require(mToken.allowance(_from,address(this)) >= _amount);
+		require(mToken.transferFrom(_from,_to,_amount));
+		SubscriptionPaid(_from, _to, _amount);
+		return true;
 	}
 }

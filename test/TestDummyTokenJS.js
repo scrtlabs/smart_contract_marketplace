@@ -1,13 +1,12 @@
-var DummyToken = artifacts.require("./DummyToken.sol");
+var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
+contract('EnigmaToken',(accounts)=>{
 
-contract('DummyToken',(accounts)=>{
-
-  it("Should display owners balance with 10,000",(()=>{
-    return DummyToken.deployed().then(instance=>{
+  it("Should display owners balance with 10000",(()=>{
+    return EnigmaToken.deployed().then(instance=>{
       return instance.balanceOf.call(accounts[0]).then(balance=>{
         var expected = 10000;
-        assert.equal(balance,expected,"Expected 10,000 tokens");
+        assert.equal(balance,expected,"Expected 10000 tokens");
       });
     });
   }));
@@ -25,7 +24,7 @@ contract('DummyToken',(accounts)=>{
 
     var amount = 10;
 
-    return DummyToken.deployed().then(function(instance) {
+    return EnigmaToken.deployed().then(function(instance) {
       meta = instance;
       return meta.balanceOf.call(account_one);
     }).then(function(balance) {

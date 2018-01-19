@@ -2,8 +2,6 @@ pragma solidity ^0.4.18;
 
 
 import "../zeppelin-solidity/StandardToken.sol";
-import "../zeppelin-solidity/Pausable.sol";
-
 
 /**
  * @title Enigma Token
@@ -24,18 +22,18 @@ import "../zeppelin-solidity/Pausable.sol";
  * this contract.
  *
  */
-contract EnigmaToken is StandardToken, Pausable {
+contract EnigmaToken is StandardToken {
 
   string public constant name = 'Enigma';                                      // Set the token name for display
   string public constant symbol = 'ENG';                                       // Set the token symbol for display
   uint8 public constant decimals = 8;                                          // Set the number of decimals for display
-  uint256 public constant INITIAL_SUPPLY = 150000000 * 10**uint256(decimals);  // 150 million ENG specified in Grains
-
+  uint256 public constant INITIAL_SUPPLY = 10000;  // 150 million ENG specified in Grains
+   address public test;
   /**
    * @dev SesnseToken Constructor
    * Runs only on initial contract creation.
    */
-  function EnigmaToken() {
+  function EnigmaToken(address testValue) {
     totalSupply = INITIAL_SUPPLY;                               // Set the total supply
     balances[msg.sender] = INITIAL_SUPPLY;                      // Creator address is assigned all
     Transfer(0x0, msg.sender, INITIAL_SUPPLY);
@@ -46,8 +44,9 @@ contract EnigmaToken is StandardToken, Pausable {
    * @param _to The address to transfer to.
    * @param _value The amount to be transferred.
    */
-  function transfer(address _to, uint256 _value) whenNotPaused returns (bool) {
+  function transfer(address _to, uint256 _value) returns (bool) {
     require(_to != address(0));
+    test= msg.sender;
     return super.transfer(_to, _value);
   }
 
@@ -57,7 +56,7 @@ contract EnigmaToken is StandardToken, Pausable {
    * @param _to address The address which you want to transfer to
    * @param _value uint256 the amount of tokens to be transferred
    */
-  function transferFrom(address _from, address _to, uint256 _value) whenNotPaused returns (bool) {
+  function transferFrom(address _from, address _to, uint256 _value) returns (bool) {
     require(_to != address(0));
     return super.transferFrom(_from, _to, _value);
   }
@@ -67,8 +66,15 @@ contract EnigmaToken is StandardToken, Pausable {
    * @param _spender The address which will spend the funds.
    * @param _value The amount of tokens to be spent.
    */
-  function approve(address _spender, uint256 _value) whenNotPaused returns (bool) {
+  function approve(address _spender, uint256 _value) returns (bool) {
     return super.approve(_spender, _value);
   }
+  function allowance(address _owner, address _spender) public constant returns (uint256) {
+    return super.allowance(_owner,_spender);
+  }
 
+  // TEST METHODS - DELETE 
+  function getTest() public returns (address){
+    return test;
+  }
 }

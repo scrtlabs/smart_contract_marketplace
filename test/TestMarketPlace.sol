@@ -2,7 +2,7 @@ pragma solidity ^0.4.18;
 
 import "truffle/Assert.sol";
 import "truffle/DeployedAddresses.sol";
-import "../contracts/DummyToken.sol";
+import "../contracts/token/EnigmaToken.sol";
 import "../contracts/MarketPlace.sol";
 
 
@@ -10,8 +10,8 @@ contract TestMarketPlace
 {
   function testMarketPlaceRegistration() public
   {
-    DummyToken token = DummyToken(DeployedAddresses.DummyToken());
-    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.DummyToken(),now);
+    EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
+    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
     bytes32 dataSource = "name1";
     bool result = marketPlace.register(dataSource,150,msg.sender);
     address addr = marketPlace.getOwnerAddressByDataSourceName(dataSource);
@@ -21,8 +21,8 @@ contract TestMarketPlace
 
   function testMarketPlace2NameRegistration() public 
   {
-    DummyToken token = DummyToken(DeployedAddresses.DummyToken());
-    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.DummyToken(),now);
+    EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
+    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
     bytes32 name1 = "name1";
     bytes32 name2 = "name2";
     bool name1Result = marketPlace.register(name1,150,msg.sender);
@@ -36,8 +36,8 @@ contract TestMarketPlace
   }
   // throws error since the name is not unique and revert (should be tested in outside solidity)
   // function testMarketPlaceSameNameRegistration() public{
-  //   DummyToken token = DummyToken(DeployedAddresses.DummyToken());
-  //   MarketPlace marketPlace = new MarketPlace(DeployedAddresses.DummyToken(),now);
+  //   EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
+  //   MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
   //   bytes32 dataSource = "name1";
   //   marketPlace.register(dataSource,150,msg.sender);
   //   bool result = marketPlace.register(dataSource,162,msg.sender);

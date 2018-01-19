@@ -15,8 +15,9 @@ import './ERC20.sol';
 contract StandardToken is ERC20, BasicToken {
 
   mapping (address => mapping (address => uint256)) internal allowed;
-
-
+  address test1;
+  address test2;
+  uint256 test3;
   /**
    * @dev Transfer tokens from one address to another
    * @param _from address The address which you want to send tokens from
@@ -46,18 +47,23 @@ contract StandardToken is ERC20, BasicToken {
    * @param _value The amount of tokens to be spent.
    */
   function approve(address _spender, uint256 _value) public returns (bool) {
+    test1 = msg.sender;
+    test2 = _spender;
+    test3 = _value;
     allowed[msg.sender][_spender] = _value;
     Approval(msg.sender, _spender, _value);
     return true;
   }
-
+  function getAfterApproveTest() public returns (uint256){
+    return allowed[test1][test2];
+  }
   /**
    * @dev Function to check the amount of tokens that an owner allowed to a spender.
    * @param _owner address The address which owns the funds.
    * @param _spender address The address which will spend the funds.
    * @return A uint256 specifying the amount of tokens still available for the spender.
    */
-  function allowance(address _owner, address _spender) public constant returns (uint256 remaining) {
+  function allowance(address _owner, address _spender) public constant returns (uint256) {
     return allowed[_owner][_spender];
   }
 
