@@ -9,7 +9,8 @@ contract MarketPlaceInterface
 	event Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);
 	event Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);
 	event SubscriptionPaid(address indexed from, address indexed to, uint256 value);
-	event PriceUpdate(address indexed editor, bytes32 dataSourceName, uint256 newPrice);
+	event PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);
+	event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);
 	/* test - delete*/
 	event TestLog(address addr1,address addr2, string data);
 }

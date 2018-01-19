@@ -57,7 +57,7 @@ contract MarketPlace is MarketPlaceInterface
 		//TODO:: use SafeMath
 		// pay for subscription
 		bool success = safeTransfer(msg.sender,mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price);
-		require(success); // lol
+		require(success); // LOL
 		// update the dataSource
 		mDataSources[_dataSourceName].volume += mDataSources[_dataSourceName].price;
 		mDataSources[_dataSourceName].subscriptionsNumber += 1;
@@ -87,7 +87,7 @@ contract MarketPlace is MarketPlaceInterface
 		return true;
 	}
 	function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) 
-	public
+	external
 	validPrice(_newPrice) 
 	onlyDataOwner(_dataSourceName,msg.sender) 
 	returns (bool)
@@ -96,6 +96,15 @@ contract MarketPlace is MarketPlaceInterface
 		PriceUpdate(msg.sender, _dataSourceName, _newPrice);
 		return true;
 	} 
+	function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) 
+	external
+	onlyDataOwner(_dataSourceName,msg.sender) 
+	returns (bool)
+	{
+		mDataSources[_dataSourceName].isActive = status;
+		ActivityUpdate(msg.sender,_dataSourceName,status);
+		return true;
+	}
 	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint)
 	{
 		require(_subscriber != address(0));

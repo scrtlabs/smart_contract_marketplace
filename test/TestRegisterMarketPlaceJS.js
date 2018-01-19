@@ -108,7 +108,7 @@ if(true)
       })
     }); 
 
-    // #7 coule with #2
+    // #7 coupled with #2
 if(true)
   it("Should Approve and Subscribe to the marketplace provider",()=>{
     var provider = accounts[1];
