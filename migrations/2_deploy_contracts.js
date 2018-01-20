@@ -1,5 +1,6 @@
 var MarketPlace = artifacts.require("./MarketPlace.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
+var SafeMath = artifacts.require("./zeppelin-solidity/SafeMath.sol");
 
 module.exports = function(deployer) {
   deployer.then(()=>{
@@ -8,6 +9,8 @@ module.exports = function(deployer) {
   }).then(()=>{
   	return EnigmaToken.deployed();
   }).then(tokenInstance=>{
-  	return deployer.deploy(MarketPlace, tokenInstance.address, 123);
+  	deployer.deploy(SafeMath);
+  	deployer.link(SafeMath,MarketPlace);
+  	return deployer.deploy(MarketPlace, tokenInstance.address);
   });
 };

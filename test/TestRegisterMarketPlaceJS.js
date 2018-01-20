@@ -59,7 +59,7 @@ if(true)
     }).then((addr)=>{
       assert.equal(addr,addr1);
     });
-  });
+  });                                                                                                                                                                                                                                                                                                                                                   
   
 
   // #5
@@ -92,7 +92,7 @@ if(true)
     it("Should update a data source price ",()=>{
       var newPrice = 25;
       var dataSet = "DataSet1";
-      var owner = accounts[0];
+      var owner = accounts[1];
       return MarketPlace.deployed().then(instance=>{
         marketPlace = instance;
         return marketPlace.updateDataSourcePrice(dataSet,newPrice, {from:owner});

@@ -11,7 +11,7 @@ contract TestMarketPlace
   function testMarketPlaceRegistration() public
   {
     EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
-    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
+    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken());
     bytes32 dataSource = "name1";
     bool result = marketPlace.register(dataSource,150,msg.sender);
     address addr = marketPlace.getOwnerFromName(dataSource);
@@ -22,7 +22,7 @@ contract TestMarketPlace
   function testMarketPlace2NameRegistration() public 
   {
     EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
-    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
+    MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken());
     bytes32 name1 = "name1";
     bytes32 name2 = "name2";
     bool name1Result = marketPlace.register(name1,150,msg.sender);
@@ -37,7 +37,7 @@ contract TestMarketPlace
   // throws error since the name is not unique and revert (should be tested in outside solidity)
   // function testMarketPlaceSameNameRegistration() public{
   //   EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
-  //   MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken(),now);
+  //   MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken());
   //   bytes32 dataSource = "name1";
   //   marketPlace.register(dataSource,150,msg.sender);
   //   bool result = marketPlace.register(dataSource,162,msg.sender);
