@@ -9,8 +9,8 @@ module.exports = function(deployer) {
   }).then(()=>{
   	return EnigmaToken.deployed();
   }).then(tokenInstance=>{
-  	deployer.deploy(SafeMath);
-  	deployer.link(SafeMath,MarketPlace);
+  	// deployer.deploy(SafeMath);
+  	// deployer.link(SafeMath,MarketPlace);
   	return deployer.deploy(MarketPlace, tokenInstance.address);
   });
 };

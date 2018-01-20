@@ -116,5 +116,4 @@ contract IMarketPlace{
 	@param newStatus true = active, false = not active (cannot be sold)
 	*/
 	event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);
-
 }

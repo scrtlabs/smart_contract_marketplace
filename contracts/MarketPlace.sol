@@ -65,8 +65,8 @@ contract MarketPlace is IMarketPlace
 		// update the subscription info
 		mSubscribers[msg.sender][_dataSourceName].price = mDataSources[_dataSourceName].price;
 		mSubscribers[msg.sender][_dataSourceName].startTime = now;
-		mSubscribers[msg.sender][_dataSourceName].endTime = addExpiration(now);
-		Subscribed(msg.sender,_dataSourceName, msg.sender, mFixedSubscriptionPeriod, true);
+		mSubscribers[msg.sender][_dataSourceName].endTime = mFixedSubscriptionPeriod.add(now);
+		Subscribed(msg.sender,_dataSourceName, mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price, true);
 		return true;
 	}
 	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) 
@@ -112,8 +112,8 @@ contract MarketPlace is IMarketPlace
 			_dataSourceName,
 			mSubscribers[_subscriber][_dataSourceName].price,
 			mSubscribers[_subscriber][_dataSourceName].startTime,
-			mSubscribers[_subscriber][_dataSourceName].endTime
-			isExpiredSubscription(mSubscribers[_subscriber][_dataSourceName].endTime));
+			mSubscribers[_subscriber][_dataSourceName].endTime,
+			isExpiredSubscription(_subscriber,_dataSourceName));
 	}
 
 	function getOwnerFromName(bytes32 _dataSourceName) public view returns(address)
@@ -131,7 +131,7 @@ contract MarketPlace is IMarketPlace
 	}
 	function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool)
 	{
-		return mSubscribers[_subscriber][_dataSourceName].endTime >= mFixedSubscriptionPeriod;
+		return mFixedSubscriptionPeriod.add(now) >= mSubscribers[_subscriber][_dataSourceName].endTime;
 	}
 	function isActiveDataSource(bytes32 _dataSourceName) external returns (bool)
 	{
@@ -140,10 +140,7 @@ contract MarketPlace is IMarketPlace
 	/*
 		Internal Functions
 	*/
-	function addExpiration(uint _time) internal view returns(uint)
-	{
-		return _time.add(mFixedSubscriptionPeriod);
-	}
+
 	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
 		require(address(_from) != 0 && address(_to)!=0);
 		require(mToken.allowance(_from,address(this)) >= _amount);
@@ -187,5 +184,4 @@ contract MarketPlace is IMarketPlace
 	function transfer(address to, uint256 value) public returns (bool){
 		return mToken.transfer(to,value);
 	}
-
 }

@@ -2,8 +2,22 @@
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 var MarketPlace = artifacts.require("./MarketPlace.sol");
 var utils = require("./utils");
+var timestamp = require("unix-timestamp");
 
 contract('MarketPlace',(accounts)=>{
+
+// #0
+if (true)
+  it("Should validate that the subscription time is 30 days.", ()=>{
+    return MarketPlace.deployed().then(instance=>{marketPlace = instance; return instance.mFixedSubscriptionPeriod.call()}).
+      then((period)=>{
+        var now = timestamp.now();
+        var expectedFuture = timestamp.add(now,"30d");
+        var returnedFuture = timestamp.add(now,parseInt(period));
+        var delta = 0.001;
+        assert.equal(Math.abs(expectedFuture-returnedFuture)<delta,true,"subscription Period is not good.");
+      });
+  });
 
 
   // #1
@@ -138,7 +152,6 @@ if(true)
                     then(balance=>{assert.equal(balance.toNumber(),dataPrice,"Providers balance isnt updated");}).
                       then(()=>{return marketPlace.getDataSource.call(dataSetName);}).
                           then(dataSourceInfo=>{
-                            console.log(JSON.stringify(dataSourceInfo,null,2));
                             var owner = dataSourceInfo[0];
                             var price = dataSourceInfo[1].toNumber();
                             var volume = dataSourceInfo[2].toNumber();
