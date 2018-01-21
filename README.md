@@ -65,7 +65,10 @@ Use with --reset flag for restarting migrations.
 ```
 truffle migrate 
 ```
-### API
+### Examples:
+
+Web3 connection:
+
 
 ```node
 
@@ -88,6 +91,33 @@ module.exports.web3= web3;
 
 ```
 
+To register a data source.
+
+```node
+	var price = 100;
+	var owner = eth.accounts[0];
+	var deployer = eth.accounts[0];
+
+	marketPlace().then((instance)=>{
+		contract = instance;
+		return contract.register('data name',price,owner,{from:deployer,gas:999999});
+	});
+```
+
+Listen to Blockchain events:
+
+```node
+  marketPlace().then(instance=>{
+	eventRegistered = instance.Registered(); // => add filters Registered({from:, price:})
+	eventRegistered.watch((err,eventResult)=>{
+		// handle events...
+		// bytes to ascii
+		var name = web3.toAscii(eventResult.args.dataSourceName);
+		// stop watching for events.
+		eventRegistered.stopWatching(); 
+	});
+  });
+```
 ## Built With
 
 * [Ganache](http://truffleframework.com/ganache/) -Test network
