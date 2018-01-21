@@ -140,7 +140,7 @@ allowance() and transferFrom() functions are encapsulated inside Marketplace, an
 will run the payment process and trigger a SubscriptionPaid() event. 
 
 
-```sol
+```node
 	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
 		require(address(_from) != 0 && address(_to)!=0);
 		require(mToken.allowance(_from,address(this)) >= _amount);
