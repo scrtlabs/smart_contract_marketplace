@@ -77,7 +77,7 @@ Web3 connection:
 ```node
 
 let EnigmaABI = require("../build/contracts/EnigmaToken.json");
-let MarketPlaceABI = require ("../build/contracts/MarketPlace.json");
+let MarketPlaceABI = require ("../build/contracts/Marketplace.json");
 let contract = require('truffle-contract');
 // contracts
 let EnigmaContract = contract(EnigmaABI);
@@ -122,6 +122,34 @@ Listen to Blockchain events:
 	});
   });
 ```
+Approve the ERC20 token contract as a spender on behalf of X:
+Trigers Approval() event.
+
+```node
+	var allowance = 100;
+	var subscriber = web3.eth.accounts[0];
+	var gas = 99999;
+	marketPlace().
+	then(instance=>{mp = instance;return enigma();}).
+		then((instance)=>{ eng = instance; return eng.approve(mp.address,allowance,{from:subscriber,gas:gas})}).
+			then(txRecipt=>{ // tx recipt ...});
+```
+
+allowance() and transferFrom() functions are encapsulated inside Marketplace, an internal safeTransfer() function 
+
+will run the payment process and trigger a SubscriptionPaid() event. 
+
+
+```sol
+	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
+		require(address(_from) != 0 && address(_to)!=0);
+		require(mToken.allowance(_from,address(this)) >= _amount);
+		require(mToken.transferFrom(_from,_to,_amount));
+		SubscriptionPaid(_from, _to, _amount);
+		return true;
+	}
+```
+
 ## Built With
 
 * [Ganache](http://truffleframework.com/ganache/) -Test network

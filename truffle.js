@@ -18,7 +18,6 @@ module.exports = {
       gas: 99999999999999,
     } 
   },
- 
   // solc: {
   // optimizer: {
   //   enabled: true,

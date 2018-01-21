@@ -34,13 +34,5 @@ contract TestMarketPlace
     Assert.equal(addr1,msg.sender,"name1 address didnt return");
     Assert.equal(addr2,msg.sender,"name2 address didnt return");
   }
-  // throws error since the name is not unique and revert (should be tested in outside solidity)
-  // function testMarketPlaceSameNameRegistration() public{
-  //   EnigmaToken token = EnigmaToken(DeployedAddresses.EnigmaToken());
-  //   MarketPlace marketPlace = new MarketPlace(DeployedAddresses.EnigmaToken());
-  //   bytes32 dataSource = "name1";
-  //   marketPlace.register(dataSource,150,msg.sender);
-  //   bool result = marketPlace.register(dataSource,162,msg.sender);
-  //   Assert.equal(result,false,"Same name was registred twice");
-  // }
+
 }

@@ -4,21 +4,7 @@ pragma solidity ^0.4.18;
 *@title MarketPlace interface
 *@dev This is the interface of the marketplace contract for enigma.
 */
-contract IMarketPlace{
-	/*
-	*@dev used by users who would like to use and pay a data provider. 
-	*@param _dataSourceName chosen data source name.
-	*@return bool true of successful. 
-	*/
-	function subscribe(bytes32 _dataSourceName) public returns (bool);
-	/*
-	*@dev for data providers to list their data set. 
-	*@param _dataSourceName the unique name that will be used for listing the data set
-	*@param _price the subscription price 
-	*@paran _dataOwner the account that will get paid and owns the data.
-	*@return true if success.
-	*/
-	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) public returns (bool);
+contract IMarketplace{
 	/*
 	*@dev if data set owner wants to update the price for FUTURE users.
 	*@param _dataSourceName name of the data source
@@ -33,6 +19,26 @@ contract IMarketPlace{
 	*@return true if success.
 	*/
 	function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) external returns (bool);
+	/*
+	*@dev data providers can decide to turn off/on their offer for future requests.
+	*@param _dataSourceName the data source in context
+	*@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)
+	*/
+	function isActiveDataSource(bytes32 _dataSourceName) external returns (bool);
+	/*
+	*@dev used by users who would like to use and pay a data provider. 
+	*@param _dataSourceName chosen data source name.
+	*@return bool true of successful. 
+	*/
+	function subscribe(bytes32 _dataSourceName) public returns (bool);
+	/*
+	*@dev for data providers to list their data set. 
+	*@param _dataSourceName the unique name that will be used for listing the data set
+	*@param _price the subscription price 
+	*@paran _dataOwner the account that will get paid and owns the data.
+	*@return true if success.
+	*/
+	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) public returns (bool);
 	/*
 	*@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)
 	*@param _subscriber the subscriber address
@@ -69,12 +75,7 @@ contract IMarketPlace{
 	@return bool true if valid, false otherwise
 	*/
 	function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool);
-	/*
-	*@dev data providers can decide to turn off/on their offer for future requests.
-	*@param _dataSourceName the data source in context
-	*@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)
-	*/
-	function isActiveDataSource(bytes32 _dataSourceName) external returns (bool);
+
 	
 	/*********** Events ************/
 	

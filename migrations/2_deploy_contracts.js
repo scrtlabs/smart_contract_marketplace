@@ -1,4 +1,4 @@
-var MarketPlace = artifacts.require("./MarketPlace.sol");
+var MarketPlace = artifacts.require("./Marketplace.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 var SafeMath = artifacts.require("./zeppelin-solidity/SafeMath.sol");
 

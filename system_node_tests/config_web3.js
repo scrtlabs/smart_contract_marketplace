@@ -1,5 +1,5 @@
 let EnigmaABI = require("../build/contracts/EnigmaToken.json");
-let MarketPlaceABI = require ("../build/contracts/MarketPlace.json");
+let MarketPlaceABI = require ("../build/contracts/Marketplace.json");
 let contract = require('truffle-contract');
 // contracts
 let EnigmaContract = contract(EnigmaABI);

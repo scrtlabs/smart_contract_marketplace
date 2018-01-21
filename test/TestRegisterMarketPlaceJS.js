@@ -4,12 +4,15 @@ var MarketPlace = artifacts.require("./MarketPlace.sol");
 var utils = require("./utils");
 var timestamp = require("unix-timestamp");
 
+var compilicated = false;
+var simple = true;
+
 contract('MarketPlace',(accounts)=>{
 
 // #1
 if (true)
   it("Should validate that the subscription time is 30 days.", ()=>{
-    return MarketPlace.deployed().then(instance=>{marketPlace = instance; return instance.mFixedSubscriptionPeriod.call()}).
+    return MarketPlace.deployed().then(instance=>{marketPlace = instance; return instance.FIXED_SUBSCRIPTION_PERIOD.call()}).
       then((period)=>{
         var now = timestamp.now();
         var expectedFuture = timestamp.add(now,"30d");
@@ -23,7 +26,7 @@ if (true)
 // #2
 // works fine alone, conflict with #3
 //params{dataName,price,ownerAddress,fromTX}
-if (true)
+if (true && simple)
   it("Should Register a new data Provider",()=>{
     MarketPlace.deployed().then(instance=>{
       utils.registerAndThen(instance,{dataName:"DataSet1",price:100,ownerAddress:accounts[1],fromTX:accounts[0]},(marketPlace,p)=>{});
@@ -31,7 +34,7 @@ if (true)
   });
 
   // #3
-if(false)
+if(true && compilicated)
   it("Should Register 2 names under the same address(owner)", ()=>{
     var addr1_owner,addr2_owner;
     var registerOne = {dataName: "DataSet1",price:100,ownerAddress:accounts[1],fromTX: accounts[0]};
@@ -57,7 +60,7 @@ if(false)
   });
   // #4 
   // coupled with #2 (Dataset namedependency)
-if(true)
+if(true && simple)
   it("Should get Owner Name",()=>{
     var dataSet = "DataSet1";
     var addr1 = accounts[1];
@@ -71,7 +74,7 @@ if(true)
 
   // #5
   // coupled with #2
-if(true)
+if(true && simple)
   it("Should get data source details",()=>{
     var dataSet = "DataSet1";
     var addrBase = accounts[1];
@@ -95,7 +98,7 @@ if(true)
 
     // #6
     // couple with #2
-  if(true)
+  if(true && simple)
     it("Should update a data source price ",()=>{
       var newPrice = 25;
       var dataSet = "DataSet1";
@@ -116,7 +119,7 @@ if(true)
     }); 
 
     // #7 coupled with #2
-if(true)
+if(true && simple)
   it("Should Approve and Subscribe to the marketplace provider",()=>{
     var provider = accounts[1];
     var subscriber = accounts[0];
