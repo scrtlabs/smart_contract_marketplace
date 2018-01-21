@@ -1,61 +1,139 @@
-let contract = require('truffle-contract');
-let EnigmaABI = require("../build/contracts/EnigmaToken.json");
-let MarketPlaceABI = require ("../build/contracts/MarketPlace.json");
-// contracts
-let EnigmaContract = contract(EnigmaABI);
-let MarketPlaceContract = contract(MarketPlaceABI);
-// Web3
-let Web3 = require('web3');
-let provider = new Web3.providers.HttpProvider("http://localhost:8545");
-let web3 = new Web3(provider);
-EnigmaContract.setProvider(provider);
-MarketPlaceContract.setProvider(provider);
 
-function enigmaToken(){
-	return EnigmaContract.deployed();
-}
-function marketPlace(){
-	return MarketPlaceContract.deployed();
-}
+/************************************************************************/
+/******************* Configuration **************************************/
+/************************************************************************/
+const config = require("./config_web3");
+enigma = config.enigma;
+marketPlace = config.marketPlace;
+web3= config.web3;
 
-let acc0 = '0x627306090abaB3A6e1400e9345bC60c78a8BEf57';
-let acc1 = '0xf17f52151EbEF6C7334FAD080c5704D77216b732';
-let acc2 = '0xC5fdf4076b8F3A5357c5E395ab970B5B54098Fef';
+/************************************************************************/
+/******************* Registration test **********************************/
+/************************************************************************/
 
-/* simple balance call */
-function checkAddrCoinBalance(addr,callback){
-	EnigmaContract.deployed().then((instance) => {
-	    return instance.balanceOf.call(addr);
-	}).then(callback);
-}
+let gas = 999999999;
+
+// Some data curator wants to register his data set. 
+// 1) Register Dataset A => success
+// 2) then try registering Dataset A again => throw 
 
 
-var approvePayment = function(owner,spender,amount){
-	return new Promise((resolve,reject)=>{
-		enigmaToken().then(instance=>{
-			var tx = instance.approve(spender,amount, {from:owner});
-			resolve(tx);
-		});
+
+/* set a listener = > registration event will happen in the future */
+// 'Registered' => event Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);
+let eventRegistered;
+function testRegisteredEventListener(){
+  marketPlace().then(instance=>{
+	eventRegistered = instance.Registered(); // => add filters Registered({from:, price:})
+	eventRegistered.watch((err,eventResult)=>{
+		// handle events...
+		// bytes to ascii
+		var name = web3.toAscii(eventResult.args.dataSourceName);
+		// stop watching for events.
+		eventRegistered.stopWatching(); 
 	});
-};
+  });
+}
 
-// approvePayment(acc0,acc1,150).then(tx=>{
-// 	console.log(tx);
-// });
+/* registration process*/ //{from,name,price,owner}
+function testRegistration(params){
+	p=params;
+	return marketPlace().then((instance)=>{
+	contract = instance;
+	return contract.register(p.name,p.price,p.owner,{from:p.from,gas:gas});
+	});
+}
+/* same name and error handling registration */
+function testDoubleRegistrationError(params){
+	p=params;
+	marketPlace().then((instance)=>{
+	contract = instance;
+	return contract.register(p.name,p.price,p.owner,{from:p.from,gas:gas});
+	}).then((txRecipt)=>{
+		// txRecipt => recipt for the future transactions.
+		return contract.register(p.name,p.price,p.owner,{from:p.from,gas:gas});
+	}).catch((err)=>{
+		// handle Contracts throw. // CONTRACT 
+		console.log("Solidity throw",err);
+	});
+}
 
-EnigmaContract.deployed().then(instance=>{
-	instance.approve('0x627306090abaB3A6e1400e9345bC60c78a8BEf57',100);
-}).then(tx=>{
-	console.log(tx);
-});
+
+/* test activation */
+
+//testRegisteredEventListener();
+//testRegistration({from: web3.eth.coinbase, name: "DataSet30" , price:100 , owner:web3.eth.coinbase});
+//testDoubleRegistration();
+
+
 /************************************************************************/
-/******************* TESTS **********************************************/
+/******************* Subscription test **********************************/
 /************************************************************************/
-let addrOwner = '0x627306090abaB3A6e1400e9345bC60c78a8BEf57';
-let address = addrOwner;
-if(false)
-checkAddrCoinBalance(address,(balance) => {
-		console.log("The balance: " + balance.valueOf());
+
+let dataSourceName = "haimke12344422";
+
+
+// Some user wants to subscribe to a data provider
+// 1) approve() in the token contract.
+// 2) subscribe() in the marketplace contract.
+
+// the data provider - registerd
+let dataProvider = web3.eth.accounts[1];
+// the data consumer
+let subscriber = web3.eth.accounts[0];
+let price = 100;
+
+/* EVENT HANDLING */
+
+// enigma token event:
+// this means a client approved the marketplace contract to pay for him.
+//event Approval(address indexed owner, address indexed spender, uint256 value);
+// marketplace event:
+// solidity event for when subscriber pays (happens BEFORE actually changing the data in the contract)
+//event SubscriptionPaid(address indexed from, address indexed to, uint256 value);
+// solidity event for when the contract updated subscription data AND customer paid
+//event Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);
+let eventApproval;
+let eventSubscribed;
+
+marketPlace().then(instance=>{
+	eventSubscribed = instance.Subscribed({dataSourceName:dataSourceName});
+	eventSubscribed.watch((err,eventResult)=>{
+		// event happend. 
+		// user subscribed
+		//eventSubscribed.stopWatching();
+	});
 });
+enigma().then(instance=>{
+	eventApproval = instance.Approval({owner:subscriber});//({spender:dataProvider});
+	eventApproval.watch((err,eventResult)=>{
+	// contract is approved -> lets subscribe
+	testSubscribe();
+	eventApproval.stopWatching();
+	});
+});
+
+
+
+
+function testApprovalENG(){
+	marketPlace().
+	then(instance=>{mp = instance;return enigma();}).
+		then((instance)=>{ eng = instance; return eng.approve(mp.address,price,{from:subscriber,gas:gas})}).
+			then(txRecipt=>{});
+}
+
+function testSubscribe(){
+	marketPlace().
+		then(instance=>{mp = instance; return mp.subscribe(dataSourceName,{from:subscriber,gas:gas})}).
+			then(tx=>{})
+}
+
+/* test activation */
+testRegistration({from: web3.eth.accounts[1], name: dataSourceName , price:100 , owner:web3.eth.accounts[1]}).then(()=>{
+	testApprovalENG();	
+});
+
+
 
 
