@@ -37,6 +37,10 @@ sudo npm install -g truffle
 
 ## Running the tests
 
+The tests has to be deployed with an ERC20 Token, the original implementation is in /contracts/token.
+Due to that, the tokens are deployed as well in the migration file.
+
+
 To run Truffle tests
 
 
