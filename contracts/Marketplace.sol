@@ -138,6 +138,7 @@ contract Marketplace is IMarketplace{
 	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
 		require(address(_from) != 0 && address(_to)!=0);
 		require(mToken.allowance(_from,address(this)) >= _amount);
+		// overflow check (2**256 - 1) + 1 = 0 inside SafeMath
 		require(mToken.transferFrom(_from,_to,_amount));
 		SubscriptionPaid(_from, _to, _amount);
 		return true;
@@ -151,7 +152,6 @@ contract Marketplace is IMarketplace{
 		_;
 	}
 	modifier validPrice(uint _testPrice){
-		// overflow check (2**256 - 1) + 1 = 0
 		require(_testPrice>=0);
 		_;
 	}
