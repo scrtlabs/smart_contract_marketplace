@@ -6,7 +6,7 @@ var timestamp = require("unix-timestamp");
 
 contract('MarketPlace',(accounts)=>{
 
-// #0
+// #1
 if (true)
   it("Should validate that the subscription time is 30 days.", ()=>{
     return MarketPlace.deployed().then(instance=>{marketPlace = instance; return instance.mFixedSubscriptionPeriod.call()}).
@@ -20,13 +20,6 @@ if (true)
   });
 
 
-  // #1
-if (true)
-  it("Should return the EnigmaToken owner balance via the MarketPlace contract", ()=>{
-    return MarketPlace.deployed().then(instance=>{return instance.balanceOf.call(accounts[0])}).
-      then((balance)=>{assert.equal(balance,10000,"Owner Balance is incorrect");});
-  });
-  
 // #2
 // works fine alone, conflict with #3
 //params{dataName,price,ownerAddress,fromTX}

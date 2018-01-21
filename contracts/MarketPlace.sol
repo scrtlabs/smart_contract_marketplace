@@ -174,14 +174,14 @@ contract MarketPlace is IMarketPlace
 		require(mDataSources[_dataSourceName].owner == _testAddress);
 		_;
 	}
-	/* TO BE DELETED */
-	function getTest() public view returns (address){
-		return mToken.getTest();
-	}
-	function balanceOf(address who) public constant returns (uint256){
-		return mToken.balanceOf(who);
-	}
-	function transfer(address to, uint256 value) public returns (bool){
-		return mToken.transfer(to,value);
-	}
+	// /* TO BE DELETED */
+	// function getTest() public view returns (address){
+	// 	return mToken.getTest();
+	// }
+	// function balanceOf(address who) public constant returns (uint256){
+	// 	return mToken.balanceOf(who);
+	// }
+	// function transfer(address to, uint256 value) public returns (bool){
+	// 	return mToken.transfer(to,value);
+	// }
 }

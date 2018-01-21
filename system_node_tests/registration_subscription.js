@@ -17,8 +17,6 @@ let gas = 999999999;
 // 1) Register Dataset A => success
 // 2) then try registering Dataset A again => throw 
 
-
-
 /* set a listener = > registration event will happen in the future */
 // 'Registered' => event Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);
 let eventRegistered;
@@ -70,7 +68,7 @@ function testDoubleRegistrationError(params){
 /******************* Subscription test **********************************/
 /************************************************************************/
 
-let dataSourceName = "haimke12344422";
+let dataSourceName = "BittrexCandlesData";
 
 
 // Some user wants to subscribe to a data provider
@@ -99,8 +97,9 @@ let eventSubscribed;
 marketPlace().then(instance=>{
 	eventSubscribed = instance.Subscribed({dataSourceName:dataSourceName});
 	eventSubscribed.watch((err,eventResult)=>{
-		// event happend. 
-		// user subscribed
+		// event happend. => user subscribed.
+		// check addresss subscription details.
+		testCheckAddressSubscription();
 		//eventSubscribed.stopWatching();
 	});
 });
@@ -112,8 +111,6 @@ enigma().then(instance=>{
 	eventApproval.stopWatching();
 	});
 });
-
-
 
 
 function testApprovalENG(){
@@ -129,11 +126,24 @@ function testSubscribe(){
 			then(tx=>{})
 }
 
+function testCheckAddressSubscription(){
+	marketPlace().
+	 then(instance=>{ return instance.checkAddressSubscription.call(subscriber,dataSourceName)}).
+	 	then(subscriptionInfo=>{
+	 		var subscriberAddr = subscriptionInfo[0];
+	 		var name = subscriptionInfo[1];
+	 		var price = subscriptionInfo[2].toNumber();
+	 		var startTime = subscriptionInfo[3].toNumber(); //unix timestamp
+	 		var endTime = subscriptionInfo[4].toNumber();
+	 		var isExpired = subscriptionInfo[5];
+	 	});
+}
 /* test activation */
-testRegistration({from: web3.eth.accounts[1], name: dataSourceName , price:100 , owner:web3.eth.accounts[1]}).then(()=>{
+
+/*
+testRegistration({from: dataProvider, name: dataSourceName , price:price , owner:dataProvider}).then(()=>{
 	testApprovalENG();	
 });
-
-
+*/
 
 
