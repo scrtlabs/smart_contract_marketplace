@@ -99,8 +99,8 @@ To register a data source.
 
 ```node
 	var price = 100;
-	var owner = eth.accounts[0];
-	var deployer = eth.accounts[0];
+	var owner = web3.eth.accounts[0];
+	var deployer = web3.eth.accounts[0];
 
 	marketPlace().then((instance)=>{
 		contract = instance;
