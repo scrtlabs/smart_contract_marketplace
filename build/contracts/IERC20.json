@@ -179,7 +179,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.18;\n\n\nimport \"./IMarketPlace.sol\";\nimport \"./zeppelin-solidity/SafeMath.sol\";\n\ncontract IERC20 {\n  function balanceOf(address who) public constant returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  function allowance(address owner, address spender) public constant returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  function getTest() public view returns (address);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n\n\ncontract MarketPlace is IMarketPlace\n{\n\tusing SafeMath for uint256;\n\tusing SafeMath for uint;\n\n\t/*Data structures */\n\tstruct Datasource{\n\t\taddress signedBy;\n\t\taddress owner;\n\t\tuint256 price;\n\t\tuint256 volume;\n\t\tuint256 subscriptionsNumber;\n\t\tbool isSource;\n\t\tbool isActive;\n\t}\n\tstruct Subscription{\n\t\tuint256 price;\n\t\tuint startTime;\n\t\tuint endTime;\n\t}\n\n\tmapping(bytes32=>Datasource) mDataSources;\n\tmapping(address=>mapping(bytes32=>Subscription)) mSubscribers;\n\n\t// Enigma Token\n\tIERC20 public mToken;\n\t// Fixed time defined in the C'tor (unixTimeStamp)\n\tuint public constant mFixedSubscriptionPeriod = 30 days;\n\n\n\tfunction MarketPlace(address _tokenAddress) public \n\t{\n\t\tmToken = IERC20(_tokenAddress);\n\t}\n\n\tfunction subscribe(bytes32 _dataSourceName) \n\tpublic \n\tdataSourceAlive(_dataSourceName) \n\treturns (bool)\n\t{\n\t\t// pay for subscription\n\t\tbool success = safeTransfer(msg.sender,mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price);\n\t\trequire(success); // LOL\n\t\t// update the dataSource\n\t\tmDataSources[_dataSourceName].volume = mDataSources[_dataSourceName].volume.add(mDataSources[_dataSourceName].price);\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = mDataSources[_dataSourceName].subscriptionsNumber.add(1);\n\t\t// update the subscription info\n\t\tmSubscribers[msg.sender][_dataSourceName].price = mDataSources[_dataSourceName].price;\n\t\tmSubscribers[msg.sender][_dataSourceName].startTime = now;\n\t\tmSubscribers[msg.sender][_dataSourceName].endTime = mFixedSubscriptionPeriod.add(now);\n\t\tSubscribed(msg.sender,_dataSourceName, mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price, true);\n\t\treturn true;\n\t}\n\tfunction register(bytes32 _dataSourceName, uint _price, address _dataOwner) \n\tpublic \n\tvalidPrice(_price)\n\tuniqueDataSourceName(_dataSourceName) \n\treturns (bool)\n\t{\n\t\trequire(_dataOwner != address(0));\n\t\tmDataSources[_dataSourceName].signedBy = msg.sender;\n\t\tmDataSources[_dataSourceName].owner = _dataOwner;\n\t\tmDataSources[_dataSourceName].price = _price;\n\t\tmDataSources[_dataSourceName].volume = 0;\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = 0;\n\t\tmDataSources[_dataSourceName].isSource = true;\n\t\tmDataSources[_dataSourceName].isActive = true;\n\t\tRegistered(_dataOwner, _dataSourceName, _price, true);\n\t\treturn true;\n\t}\n\tfunction updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) \n\texternal\n\tvalidPrice(_newPrice) \n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool)\n\t{\n\t\tmDataSources[_dataSourceName].price = _newPrice;\n\t\tPriceUpdate(msg.sender, _dataSourceName, _newPrice);\n\t\treturn true;\n\t} \n\tfunction changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) \n\texternal\n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool)\n\t{\n\t\tmDataSources[_dataSourceName].isActive = status;\n\t\tActivityUpdate(msg.sender,_dataSourceName,status);\n\t\treturn true;\n\t}\n\tfunction checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint,bool)\n\t{\n\t\trequire(_subscriber != address(0));\n\t\treturn (_subscriber,\n\t\t\t_dataSourceName,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].price,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].startTime,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].endTime,\n\t\t\tisExpiredSubscription(_subscriber,_dataSourceName));\n\t}\n\n\tfunction getOwnerFromName(bytes32 _dataSourceName) public view returns(address)\n\t{\n\t\treturn mDataSources[_dataSourceName].owner;\n\t}\n\tfunction getDataSource(bytes32 _dataSourceName) public view returns(address,uint256,uint256,uint256,bool,bool)\n\t{\n\t\treturn (mDataSources[_dataSourceName].owner,\n\t\t\tmDataSources[_dataSourceName].price,\n\t\t\tmDataSources[_dataSourceName].volume,\n\t\t\tmDataSources[_dataSourceName].subscriptionsNumber,\n\t\t\tmDataSources[_dataSourceName].isSource,\n\t\t\tmDataSources[_dataSourceName].isActive);\n\t}\n\tfunction isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool)\n\t{\n\t\treturn mFixedSubscriptionPeriod.add(now) >= mSubscribers[_subscriber][_dataSourceName].endTime;\n\t}\n\tfunction isActiveDataSource(bytes32 _dataSourceName) external returns (bool)\n\t{\n\t\treturn mDataSources[_dataSourceName].isActive;\n\t}\n\t/*\n\t\tInternal Functions\n\t*/\n\n\tfunction safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){\n\t\trequire(address(_from) != 0 && address(_to)!=0);\n\t\trequire(mToken.allowance(_from,address(this)) >= _amount);\n\t\trequire(mToken.transferFrom(_from,_to,_amount));\n\t\tSubscriptionPaid(_from, _to, _amount);\n\t\treturn true;\n\t}\n\n\t/*\n\t\tModifiers\n\t*/\n\tmodifier uniqueDataSourceName(bytes32 _testName)\n\t{\n\t\trequire(!mDataSources[_testName].isSource);\n\t\t_;\n\t}\n\tmodifier validPrice(uint _testPrice)\n\t{\n\t\t// overflow check (2**256 - 1) + 1 = 0\n\t\trequire(_testPrice>=0);\n\t\t_;\n\t}\n\tmodifier dataSourceAlive(bytes32 _testName)\n\t{\n\t\trequire(mDataSources[_testName].isSource && mDataSources[_testName].isActive);\n\t\t_;\n\t}\n\tmodifier onlyDataOwner(bytes32 _dataSourceName, address _testAddress)\n\t{\n\t\trequire(address(0) != _testAddress);\n\t\trequire(mDataSources[_dataSourceName].owner == _testAddress);\n\t\t_;\n\t}\n\t/* TO BE DELETED */\n\tfunction getTest() public view returns (address){\n\t\treturn mToken.getTest();\n\t}\n\tfunction balanceOf(address who) public constant returns (uint256){\n\t\treturn mToken.balanceOf(who);\n\t}\n\tfunction transfer(address to, uint256 value) public returns (bool){\n\t\treturn mToken.transfer(to,value);\n\t}\n}",
+  "source": "pragma solidity ^0.4.18;\n\n\nimport \"./IMarketPlace.sol\";\nimport \"./zeppelin-solidity/SafeMath.sol\";\n\ncontract IERC20 {\n  function balanceOf(address who) public constant returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  function allowance(address owner, address spender) public constant returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  function getTest() public view returns (address);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n\n\ncontract MarketPlace is IMarketPlace\n{\n\tusing SafeMath for uint256;\n\tusing SafeMath for uint;\n\n\t/*Data structures */\n\tstruct Datasource{\n\t\taddress signedBy;\n\t\taddress owner;\n\t\tuint256 price;\n\t\tuint256 volume;\n\t\tuint256 subscriptionsNumber;\n\t\tbool isSource;\n\t\tbool isActive;\n\t}\n\tstruct Subscription{\n\t\tuint256 price;\n\t\tuint startTime;\n\t\tuint endTime;\n\t}\n\n\tmapping(bytes32=>Datasource) mDataSources;\n\tmapping(address=>mapping(bytes32=>Subscription)) mSubscribers;\n\n\t// Enigma Token\n\tIERC20 public mToken;\n\t// Fixed time defined in the C'tor (unixTimeStamp)\n\tuint public constant mFixedSubscriptionPeriod = 30 days;\n\n\n\tfunction MarketPlace(address _tokenAddress) public \n\t{\n\t\tmToken = IERC20(_tokenAddress);\n\t}\n\n\tfunction subscribe(bytes32 _dataSourceName) \n\tpublic \n\tdataSourceAlive(_dataSourceName) \n\treturns (bool)\n\t{\n\t\t// pay for subscription\n\t\tbool success = safeTransfer(msg.sender,mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price);\n\t\trequire(success); // LOL\n\t\t// update the dataSource\n\t\tmDataSources[_dataSourceName].volume = mDataSources[_dataSourceName].volume.add(mDataSources[_dataSourceName].price);\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = mDataSources[_dataSourceName].subscriptionsNumber.add(1);\n\t\t// update the subscription info\n\t\tmSubscribers[msg.sender][_dataSourceName].price = mDataSources[_dataSourceName].price;\n\t\tmSubscribers[msg.sender][_dataSourceName].startTime = now;\n\t\tmSubscribers[msg.sender][_dataSourceName].endTime = mFixedSubscriptionPeriod.add(now);\n\t\tSubscribed(msg.sender,_dataSourceName, mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price, true);\n\t\treturn true;\n\t}\n\tfunction register(bytes32 _dataSourceName, uint _price, address _dataOwner) \n\tpublic \n\tvalidPrice(_price)\n\tuniqueDataSourceName(_dataSourceName) \n\treturns (bool)\n\t{\n\t\trequire(_dataOwner != address(0));\n\t\tmDataSources[_dataSourceName].signedBy = msg.sender;\n\t\tmDataSources[_dataSourceName].owner = _dataOwner;\n\t\tmDataSources[_dataSourceName].price = _price;\n\t\tmDataSources[_dataSourceName].volume = 0;\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = 0;\n\t\tmDataSources[_dataSourceName].isSource = true;\n\t\tmDataSources[_dataSourceName].isActive = true;\n\t\tRegistered(_dataOwner, _dataSourceName, _price, true);\n\t\treturn true;\n\t}\n\tfunction updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) \n\texternal\n\tvalidPrice(_newPrice) \n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool)\n\t{\n\t\tmDataSources[_dataSourceName].price = _newPrice;\n\t\tPriceUpdate(msg.sender, _dataSourceName, _newPrice);\n\t\treturn true;\n\t} \n\tfunction changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) \n\texternal\n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool)\n\t{\n\t\tmDataSources[_dataSourceName].isActive = status;\n\t\tActivityUpdate(msg.sender,_dataSourceName,status);\n\t\treturn true;\n\t}\n\tfunction checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint,bool)\n\t{\n\t\trequire(_subscriber != address(0));\n\t\treturn (_subscriber,\n\t\t\t_dataSourceName,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].price,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].startTime,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].endTime,\n\t\t\tisExpiredSubscription(_subscriber,_dataSourceName));\n\t}\n\n\tfunction getOwnerFromName(bytes32 _dataSourceName) public view returns(address)\n\t{\n\t\treturn mDataSources[_dataSourceName].owner;\n\t}\n\tfunction getDataSource(bytes32 _dataSourceName) public view returns(address,uint256,uint256,uint256,bool,bool)\n\t{\n\t\treturn (mDataSources[_dataSourceName].owner,\n\t\t\tmDataSources[_dataSourceName].price,\n\t\t\tmDataSources[_dataSourceName].volume,\n\t\t\tmDataSources[_dataSourceName].subscriptionsNumber,\n\t\t\tmDataSources[_dataSourceName].isSource,\n\t\t\tmDataSources[_dataSourceName].isActive);\n\t}\n\tfunction isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool)\n\t{\n\t\treturn mFixedSubscriptionPeriod.add(now) >= mSubscribers[_subscriber][_dataSourceName].endTime;\n\t}\n\tfunction isActiveDataSource(bytes32 _dataSourceName) external returns (bool)\n\t{\n\t\treturn mDataSources[_dataSourceName].isActive;\n\t}\n\t/*\n\t\tInternal Functions\n\t*/\n\n\tfunction safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){\n\t\trequire(address(_from) != 0 && address(_to)!=0);\n\t\trequire(mToken.allowance(_from,address(this)) >= _amount);\n\t\trequire(mToken.transferFrom(_from,_to,_amount));\n\t\tSubscriptionPaid(_from, _to, _amount);\n\t\treturn true;\n\t}\n\n\t/*\n\t\tModifiers\n\t*/\n\tmodifier uniqueDataSourceName(bytes32 _testName)\n\t{\n\t\trequire(!mDataSources[_testName].isSource);\n\t\t_;\n\t}\n\tmodifier validPrice(uint _testPrice)\n\t{\n\t\t// overflow check (2**256 - 1) + 1 = 0\n\t\trequire(_testPrice>=0);\n\t\t_;\n\t}\n\tmodifier dataSourceAlive(bytes32 _testName)\n\t{\n\t\trequire(mDataSources[_testName].isSource && mDataSources[_testName].isActive);\n\t\t_;\n\t}\n\tmodifier onlyDataOwner(bytes32 _dataSourceName, address _testAddress)\n\t{\n\t\trequire(address(0) != _testAddress);\n\t\trequire(mDataSources[_dataSourceName].owner == _testAddress);\n\t\t_;\n\t}\n\t// /* TO BE DELETED */\n\t// function getTest() public view returns (address){\n\t// \treturn mToken.getTest();\n\t// }\n\t// function balanceOf(address who) public constant returns (uint256){\n\t// \treturn mToken.balanceOf(who);\n\t// }\n\t// function transfer(address to, uint256 value) public returns (bool){\n\t// \treturn mToken.transfer(to,value);\n\t// }\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/MarketPlace.sol",
   "ast": {
     "attributes": {
@@ -189,7 +189,7 @@
           214
         ],
         "MarketPlace": [
-          843
+          804
         ]
       }
     },
@@ -212,7 +212,7 @@
           "SourceUnit": 144,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IMarketPlace.sol",
           "file": "./IMarketPlace.sol",
-          "scope": 844,
+          "scope": 805,
           "symbolAliases": [
             null
           ],
@@ -224,10 +224,10 @@
       },
       {
         "attributes": {
-          "SourceUnit": 939,
+          "SourceUnit": 1255,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/SafeMath.sol",
           "file": "./zeppelin-solidity/SafeMath.sol",
-          "scope": 844,
+          "scope": 805,
           "symbolAliases": [
             null
           ],
@@ -252,7 +252,7 @@
             214
           ],
           "name": "IERC20",
-          "scope": 844
+          "scope": 805
         },
         "children": [
           {
@@ -1103,11 +1103,11 @@
           "documentation": null,
           "fullyImplemented": true,
           "linearizedBaseContracts": [
-            843,
+            804,
             143
           ],
           "name": "MarketPlace",
-          "scope": 844
+          "scope": 805
         },
         "children": [
           {
@@ -1139,7 +1139,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 938,
+                  "referencedDeclaration": 1254,
                   "type": "library SafeMath"
                 },
                 "id": 217,
@@ -1166,7 +1166,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 938,
+                  "referencedDeclaration": 1254,
                   "type": "library SafeMath"
                 },
                 "id": 220,
@@ -1191,7 +1191,7 @@
             "attributes": {
               "canonicalName": "MarketPlace.Datasource",
               "name": "Datasource",
-              "scope": 843,
+              "scope": 804,
               "visibility": "public"
             },
             "children": [
@@ -1386,7 +1386,7 @@
             "attributes": {
               "canonicalName": "MarketPlace.Subscription",
               "name": "Subscription",
-              "scope": 843,
+              "scope": 804,
               "visibility": "public"
             },
             "children": [
@@ -1477,7 +1477,7 @@
             "attributes": {
               "constant": false,
               "name": "mDataSources",
-              "scope": 843,
+              "scope": 804,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "mapping(bytes32 => struct MarketPlace.Datasource storage ref)",
@@ -1524,7 +1524,7 @@
             "attributes": {
               "constant": false,
               "name": "mSubscribers",
-              "scope": 843,
+              "scope": 804,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "mapping(address => mapping(bytes32 => struct MarketPlace.Subscription storage ref))",
@@ -1590,7 +1590,7 @@
             "attributes": {
               "constant": false,
               "name": "mToken",
-              "scope": 843,
+              "scope": 804,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "contract IERC20",
@@ -1618,7 +1618,7 @@
             "attributes": {
               "constant": true,
               "name": "mFixedSubscriptionPeriod",
-              "scope": 843,
+              "scope": 804,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "uint256",
@@ -1666,7 +1666,7 @@
               ],
               "name": "MarketPlace",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -1825,7 +1825,7 @@
               "isConstructor": false,
               "name": "subscribe",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": 8,
               "visibility": "public"
@@ -2027,7 +2027,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 950,
+                                  "referencedDeclaration": 1543,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -2198,7 +2198,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -2331,7 +2331,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "add",
-                                  "referencedDeclaration": 937,
+                                  "referencedDeclaration": 1253,
                                   "type": "function (uint256,uint256) view returns (uint256)"
                                 },
                                 "children": [
@@ -2576,7 +2576,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "add",
-                                  "referencedDeclaration": 937,
+                                  "referencedDeclaration": 1253,
                                   "type": "function (uint256,uint256) view returns (uint256)"
                                 },
                                 "children": [
@@ -2754,7 +2754,7 @@
                                               "overloadedDeclarations": [
                                                 null
                                               ],
-                                              "referencedDeclaration": 950,
+                                              "referencedDeclaration": 1543,
                                               "type": "msg",
                                               "value": "msg"
                                             },
@@ -2943,7 +2943,7 @@
                                               "overloadedDeclarations": [
                                                 null
                                               ],
-                                              "referencedDeclaration": 950,
+                                              "referencedDeclaration": 1543,
                                               "type": "msg",
                                               "value": "msg"
                                             },
@@ -2991,7 +2991,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 952,
+                              "referencedDeclaration": 1545,
                               "type": "uint256",
                               "value": "now"
                             },
@@ -3086,7 +3086,7 @@
                                               "overloadedDeclarations": [
                                                 null
                                               ],
-                                              "referencedDeclaration": 950,
+                                              "referencedDeclaration": 1543,
                                               "type": "msg",
                                               "value": "msg"
                                             },
@@ -3156,7 +3156,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "add",
-                                  "referencedDeclaration": 937,
+                                  "referencedDeclaration": 1253,
                                   "type": "function (uint256,uint256) view returns (uint256)"
                                 },
                                 "children": [
@@ -3185,7 +3185,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 952,
+                                  "referencedDeclaration": 1545,
                                   "type": "uint256",
                                   "value": "now"
                                 },
@@ -3278,7 +3278,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 950,
+                                  "referencedDeclaration": 1543,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -3496,7 +3496,7 @@
               "isConstructor": false,
               "name": "register",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": 19,
               "visibility": "public"
@@ -3720,7 +3720,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -3919,7 +3919,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 950,
+                                  "referencedDeclaration": 1543,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -4697,7 +4697,7 @@
               "isConstructor": false,
               "name": "updateDataSourcePrice",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": 28,
               "visibility": "external"
@@ -4878,7 +4878,7 @@
                           "overloadedDeclarations": [
                             null
                           ],
-                          "referencedDeclaration": 950,
+                          "referencedDeclaration": 1543,
                           "type": "msg",
                           "value": "msg"
                         },
@@ -5057,7 +5057,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 950,
+                                  "referencedDeclaration": 1543,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -5152,7 +5152,7 @@
               "isConstructor": false,
               "name": "changeDataSourceActivityStatus",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": 37,
               "visibility": "external"
@@ -5298,7 +5298,7 @@
                           "overloadedDeclarations": [
                             null
                           ],
-                          "referencedDeclaration": 950,
+                          "referencedDeclaration": 1543,
                           "type": "msg",
                           "value": "msg"
                         },
@@ -5477,7 +5477,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 950,
+                                  "referencedDeclaration": 1543,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -5575,7 +5575,7 @@
               ],
               "name": "checkAddressSubscription",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "view",
               "superFunction": 56,
               "visibility": "public"
@@ -5833,7 +5833,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -6353,7 +6353,7 @@
               ],
               "name": "getOwnerFromName",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "view",
               "superFunction": 63,
               "visibility": "public"
@@ -6517,7 +6517,7 @@
               ],
               "name": "getDataSource",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "view",
               "superFunction": 80,
               "visibility": "public"
@@ -7127,7 +7127,7 @@
               ],
               "name": "isExpiredSubscription",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": 89,
               "visibility": "public"
@@ -7275,7 +7275,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "add",
-                                  "referencedDeclaration": 937,
+                                  "referencedDeclaration": 1253,
                                   "type": "function (uint256,uint256) view returns (uint256)"
                                 },
                                 "children": [
@@ -7304,7 +7304,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 952,
+                                  "referencedDeclaration": 1545,
                                   "type": "uint256",
                                   "value": "now"
                                 },
@@ -7436,7 +7436,7 @@
               ],
               "name": "isActiveDataSource",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": 96,
               "visibility": "external"
@@ -7600,7 +7600,7 @@
               ],
               "name": "safeTransfer",
               "payable": false,
-              "scope": 843,
+              "scope": 804,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "internal"
@@ -7754,7 +7754,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8000,7 +8000,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8111,7 +8111,7 @@
                                         "attributes": {
                                           "argumentTypes": [
                                             {
-                                              "typeIdentifier": "t_contract$_MarketPlace_$843",
+                                              "typeIdentifier": "t_contract$_MarketPlace_$804",
                                               "typeString": "contract MarketPlace"
                                             }
                                           ],
@@ -8132,7 +8132,7 @@
                                           "overloadedDeclarations": [
                                             null
                                           ],
-                                          "referencedDeclaration": 967,
+                                          "referencedDeclaration": 1560,
                                           "type": "contract MarketPlace",
                                           "value": "this"
                                         },
@@ -8207,7 +8207,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8533,7 +8533,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8712,7 +8712,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8865,7 +8865,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9133,7 +9133,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9269,7 +9269,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 1546,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9395,546 +9395,16 @@
             "id": 803,
             "name": "ModifierDefinition",
             "src": "5613:183:1"
-          },
-          {
-            "attributes": {
-              "constant": true,
-              "implemented": true,
-              "isConstructor": false,
-              "modifiers": [
-                null
-              ],
-              "name": "getTest",
-              "payable": false,
-              "scope": 843,
-              "stateMutability": "view",
-              "superFunction": null,
-              "visibility": "public"
-            },
-            "children": [
-              {
-                "attributes": {
-                  "parameters": [
-                    null
-                  ]
-                },
-                "children": [],
-                "id": 804,
-                "name": "ParameterList",
-                "src": "5835:2:1"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "name": "",
-                      "scope": 813,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "address",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "address",
-                          "type": "address"
-                        },
-                        "id": 805,
-                        "name": "ElementaryTypeName",
-                        "src": "5859:7:1"
-                      }
-                    ],
-                    "id": 806,
-                    "name": "VariableDeclaration",
-                    "src": "5859:7:1"
-                  }
-                ],
-                "id": 807,
-                "name": "ParameterList",
-                "src": "5858:9:1"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "functionReturnParameters": 807
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "argumentTypes": null,
-                          "arguments": [
-                            null
-                          ],
-                          "isConstant": false,
-                          "isLValue": false,
-                          "isPure": false,
-                          "isStructConstructorCall": false,
-                          "lValueRequested": false,
-                          "names": [
-                            null
-                          ],
-                          "type": "address",
-                          "type_conversion": false
-                        },
-                        "children": [
-                          {
-                            "attributes": {
-                              "argumentTypes": [
-                                null
-                              ],
-                              "isConstant": false,
-                              "isLValue": false,
-                              "isPure": false,
-                              "lValueRequested": false,
-                              "member_name": "getTest",
-                              "referencedDeclaration": 197,
-                              "type": "function () view external returns (address)"
-                            },
-                            "children": [
-                              {
-                                "attributes": {
-                                  "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
-                                  "referencedDeclaration": 256,
-                                  "type": "contract IERC20",
-                                  "value": "mToken"
-                                },
-                                "id": 808,
-                                "name": "Identifier",
-                                "src": "5878:6:1"
-                              }
-                            ],
-                            "id": 809,
-                            "name": "MemberAccess",
-                            "src": "5878:14:1"
-                          }
-                        ],
-                        "id": 810,
-                        "name": "FunctionCall",
-                        "src": "5878:16:1"
-                      }
-                    ],
-                    "id": 811,
-                    "name": "Return",
-                    "src": "5871:23:1"
-                  }
-                ],
-                "id": 812,
-                "name": "Block",
-                "src": "5867:31:1"
-              }
-            ],
-            "id": 813,
-            "name": "FunctionDefinition",
-            "src": "5819:79:1"
-          },
-          {
-            "attributes": {
-              "constant": true,
-              "implemented": true,
-              "isConstructor": false,
-              "modifiers": [
-                null
-              ],
-              "name": "balanceOf",
-              "payable": false,
-              "scope": 843,
-              "stateMutability": "view",
-              "superFunction": null,
-              "visibility": "public"
-            },
-            "children": [
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "name": "who",
-                      "scope": 826,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "address",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "address",
-                          "type": "address"
-                        },
-                        "id": 814,
-                        "name": "ElementaryTypeName",
-                        "src": "5919:7:1"
-                      }
-                    ],
-                    "id": 815,
-                    "name": "VariableDeclaration",
-                    "src": "5919:11:1"
-                  }
-                ],
-                "id": 816,
-                "name": "ParameterList",
-                "src": "5918:13:1"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "name": "",
-                      "scope": 826,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "uint256",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "uint256",
-                          "type": "uint256"
-                        },
-                        "id": 817,
-                        "name": "ElementaryTypeName",
-                        "src": "5957:7:1"
-                      }
-                    ],
-                    "id": 818,
-                    "name": "VariableDeclaration",
-                    "src": "5957:7:1"
-                  }
-                ],
-                "id": 819,
-                "name": "ParameterList",
-                "src": "5956:9:1"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "functionReturnParameters": 819
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "argumentTypes": null,
-                          "isConstant": false,
-                          "isLValue": false,
-                          "isPure": false,
-                          "isStructConstructorCall": false,
-                          "lValueRequested": false,
-                          "names": [
-                            null
-                          ],
-                          "type": "uint256",
-                          "type_conversion": false
-                        },
-                        "children": [
-                          {
-                            "attributes": {
-                              "argumentTypes": [
-                                {
-                                  "typeIdentifier": "t_address",
-                                  "typeString": "address"
-                                }
-                              ],
-                              "isConstant": false,
-                              "isLValue": false,
-                              "isPure": false,
-                              "lValueRequested": false,
-                              "member_name": "balanceOf",
-                              "referencedDeclaration": 154,
-                              "type": "function (address) view external returns (uint256)"
-                            },
-                            "children": [
-                              {
-                                "attributes": {
-                                  "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
-                                  "referencedDeclaration": 256,
-                                  "type": "contract IERC20",
-                                  "value": "mToken"
-                                },
-                                "id": 820,
-                                "name": "Identifier",
-                                "src": "5976:6:1"
-                              }
-                            ],
-                            "id": 821,
-                            "name": "MemberAccess",
-                            "src": "5976:16:1"
-                          },
-                          {
-                            "attributes": {
-                              "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
-                              "referencedDeclaration": 815,
-                              "type": "address",
-                              "value": "who"
-                            },
-                            "id": 822,
-                            "name": "Identifier",
-                            "src": "5993:3:1"
-                          }
-                        ],
-                        "id": 823,
-                        "name": "FunctionCall",
-                        "src": "5976:21:1"
-                      }
-                    ],
-                    "id": 824,
-                    "name": "Return",
-                    "src": "5969:28:1"
-                  }
-                ],
-                "id": 825,
-                "name": "Block",
-                "src": "5965:36:1"
-              }
-            ],
-            "id": 826,
-            "name": "FunctionDefinition",
-            "src": "5900:101:1"
-          },
-          {
-            "attributes": {
-              "constant": false,
-              "implemented": true,
-              "isConstructor": false,
-              "modifiers": [
-                null
-              ],
-              "name": "transfer",
-              "payable": false,
-              "scope": 843,
-              "stateMutability": "nonpayable",
-              "superFunction": null,
-              "visibility": "public"
-            },
-            "children": [
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "name": "to",
-                      "scope": 842,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "address",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "address",
-                          "type": "address"
-                        },
-                        "id": 827,
-                        "name": "ElementaryTypeName",
-                        "src": "6021:7:1"
-                      }
-                    ],
-                    "id": 828,
-                    "name": "VariableDeclaration",
-                    "src": "6021:10:1"
-                  },
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "name": "value",
-                      "scope": 842,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "uint256",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "uint256",
-                          "type": "uint256"
-                        },
-                        "id": 829,
-                        "name": "ElementaryTypeName",
-                        "src": "6033:7:1"
-                      }
-                    ],
-                    "id": 830,
-                    "name": "VariableDeclaration",
-                    "src": "6033:13:1"
-                  }
-                ],
-                "id": 831,
-                "name": "ParameterList",
-                "src": "6020:27:1"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "name": "",
-                      "scope": 842,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "bool",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "bool",
-                          "type": "bool"
-                        },
-                        "id": 832,
-                        "name": "ElementaryTypeName",
-                        "src": "6064:4:1"
-                      }
-                    ],
-                    "id": 833,
-                    "name": "VariableDeclaration",
-                    "src": "6064:4:1"
-                  }
-                ],
-                "id": 834,
-                "name": "ParameterList",
-                "src": "6063:6:1"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "functionReturnParameters": 834
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "argumentTypes": null,
-                          "isConstant": false,
-                          "isLValue": false,
-                          "isPure": false,
-                          "isStructConstructorCall": false,
-                          "lValueRequested": false,
-                          "names": [
-                            null
-                          ],
-                          "type": "bool",
-                          "type_conversion": false
-                        },
-                        "children": [
-                          {
-                            "attributes": {
-                              "argumentTypes": [
-                                {
-                                  "typeIdentifier": "t_address",
-                                  "typeString": "address"
-                                },
-                                {
-                                  "typeIdentifier": "t_uint256",
-                                  "typeString": "uint256"
-                                }
-                              ],
-                              "isConstant": false,
-                              "isLValue": false,
-                              "isPure": false,
-                              "lValueRequested": false,
-                              "member_name": "transfer",
-                              "referencedDeclaration": 163,
-                              "type": "function (address,uint256) external returns (bool)"
-                            },
-                            "children": [
-                              {
-                                "attributes": {
-                                  "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
-                                  "referencedDeclaration": 256,
-                                  "type": "contract IERC20",
-                                  "value": "mToken"
-                                },
-                                "id": 835,
-                                "name": "Identifier",
-                                "src": "6080:6:1"
-                              }
-                            ],
-                            "id": 836,
-                            "name": "MemberAccess",
-                            "src": "6080:15:1"
-                          },
-                          {
-                            "attributes": {
-                              "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
-                              "referencedDeclaration": 828,
-                              "type": "address",
-                              "value": "to"
-                            },
-                            "id": 837,
-                            "name": "Identifier",
-                            "src": "6096:2:1"
-                          },
-                          {
-                            "attributes": {
-                              "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
-                              "referencedDeclaration": 830,
-                              "type": "uint256",
-                              "value": "value"
-                            },
-                            "id": 838,
-                            "name": "Identifier",
-                            "src": "6099:5:1"
-                          }
-                        ],
-                        "id": 839,
-                        "name": "FunctionCall",
-                        "src": "6080:25:1"
-                      }
-                    ],
-                    "id": 840,
-                    "name": "Return",
-                    "src": "6073:32:1"
-                  }
-                ],
-                "id": 841,
-                "name": "Block",
-                "src": "6069:40:1"
-              }
-            ],
-            "id": 842,
-            "name": "FunctionDefinition",
-            "src": "6003:106:1"
           }
         ],
-        "id": 843,
+        "id": 804,
         "name": "ContractDefinition",
-        "src": "719:5392:1"
+        "src": "719:5422:1"
       }
     ],
-    "id": 844,
+    "id": 805,
     "name": "SourceUnit",
-    "src": "0:6111:1"
+    "src": "0:6141:1"
   },
   "compiler": {
     "name": "solc",
@@ -9942,5 +9412,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-01-20T21:13:41.391Z"
+  "updatedAt": "2018-01-21T12:46:13.040Z"
 }
