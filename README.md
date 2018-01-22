@@ -1,6 +1,6 @@
 # Enigma Data Marketplace Smart Contract
 
-The documentation for the Enigma Data Marketplace Smart Contract is available at [https://enigmampc.github.io/marketplace/smart-contract.html].
+The documentation for the Enigma Data Marketplace Smart Contract is available at https://enigmampc.github.io/marketplace/smart-contract.html.
 
 ## Getting Started
 
