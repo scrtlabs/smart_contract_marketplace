@@ -4,6 +4,26 @@ A Smart contract that interacts with the Enigma Token.
 
 The purpose is to store data for Enigma's marketplace.
 
+## Basic Operations
+
+###Subscription
+
+In order to use a data source, one would need to subscribe.
+During the subscription process a subscriber is paying the data curator.
+The payment is delegated via the Marketplace contract.
+
+The subscription process is built out of 3 steps: 
+
+1. The subscriber approve the Marketplace contract as a spender with the amount that is required for the subscription.
+2. Thge subscriber register() to the Marketplace contract. 
+3. The Marketplace contract deduct the amount and uses trasferFrom() method to pay the data curator.
+
+###Registration 
+
+In order to become a data curator, one would need to register with the smart contract.
+
+The registration process will require the following details: Datasource name, price and the owner address.
+
 
 ## Getting Started
 
