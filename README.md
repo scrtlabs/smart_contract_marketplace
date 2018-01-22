@@ -6,7 +6,7 @@ The purpose is to store data for Enigma's marketplace.
 
 ## Basic Operations
 
-###Subscription
+### Subscription
 
 In order to use a data source, one would need to subscribe.
 During the subscription process a subscriber is paying the data curator.
@@ -18,7 +18,7 @@ The subscription process is built out of 3 steps:
 2. Thge subscriber register() to the Marketplace contract. 
 3. The Marketplace contract deduct the amount and uses trasferFrom() method to pay the data curator.
 
-###Registration 
+### Registration 
 
 In order to become a data curator, one would need to register with the smart contract.
 
