@@ -179,7 +179,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.18;\n\n\nimport \"./IMarketplace.sol\";\nimport \"./zeppelin-solidity/SafeMath.sol\";\n\ncontract IERC20 {\n  function balanceOf(address who) public constant returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  function allowance(address owner, address spender) public constant returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  function getTest() public view returns (address);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n\n\ncontract Marketplace is IMarketplace{\n\n\tusing SafeMath for uint256;\n\tusing SafeMath for uint;\n\n\t/*Data structures */\n\t\n\tstruct Datasource{\n\t\taddress signedBy;\n\t\taddress owner;\n\t\tuint256 price;\n\t\tuint256 volume;\n\t\tuint256 subscriptionsNumber;\n\t\tbool isSource;\n\t\tbool isActive;\n\t}\n\tstruct Subscription{\n\t\tuint256 price;\n\t\tuint startTime;\n\t\tuint endTime;\n\t}\n\n\tmapping(bytes32=>Datasource) mDataSources;\n\tmapping(address=>mapping(bytes32=>Subscription)) mSubscribers;\n\n\t// Enigma Token\n\tIERC20 public mToken;\n\t// Fixed time defined in the C'tor (unixTimeStamp)\n\tuint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;\n\n\n\tfunction Marketplace(address _tokenAddress) public {\n\t\tmToken = IERC20(_tokenAddress);\n\t}\n\n\tfunction isActiveDataSource(bytes32 _dataSourceName) external returns (bool){\n\t\treturn mDataSources[_dataSourceName].isActive;\n\t}\n\tfunction updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) \n\texternal\n\tvalidPrice(_newPrice) \n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool){\n\t\tmDataSources[_dataSourceName].price = _newPrice;\n\t\tPriceUpdate(msg.sender, _dataSourceName, _newPrice);\n\t\treturn true;\n\t} \n\tfunction changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) \n\texternal\n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool){\n\t\tmDataSources[_dataSourceName].isActive = status;\n\t\tActivityUpdate(msg.sender,_dataSourceName,status);\n\t\treturn true;\n\t}\n\tfunction subscribe(bytes32 _dataSourceName) \n\tpublic \n\tdataSourceAlive(_dataSourceName) \n\treturns (bool){\n\t\t// pay for subscription\n\t\tbool success = safeTransfer(msg.sender,mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price);\n\t\trequire(success); // LOL\n\t\t// update the dataSource\n\t\tmDataSources[_dataSourceName].volume = mDataSources[_dataSourceName].volume.add(mDataSources[_dataSourceName].price);\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = mDataSources[_dataSourceName].subscriptionsNumber.add(1);\n\t\t// update the subscription info\n\t\tmSubscribers[msg.sender][_dataSourceName].price = mDataSources[_dataSourceName].price;\n\t\tmSubscribers[msg.sender][_dataSourceName].startTime = now;\n\t\tmSubscribers[msg.sender][_dataSourceName].endTime = FIXED_SUBSCRIPTION_PERIOD.add(now);\n\t\tSubscribed(msg.sender,_dataSourceName, mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price, true);\n\t\treturn true;\n\t}\n\tfunction register(bytes32 _dataSourceName, uint _price, address _dataOwner) \n\tpublic \n\tvalidPrice(_price)\n\tuniqueDataSourceName(_dataSourceName) \n\treturns (bool){\n\t\trequire(_dataOwner != address(0));\n\t\tmDataSources[_dataSourceName].signedBy = msg.sender;\n\t\tmDataSources[_dataSourceName].owner = _dataOwner;\n\t\tmDataSources[_dataSourceName].price = _price;\n\t\tmDataSources[_dataSourceName].volume = 0;\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = 0;\n\t\tmDataSources[_dataSourceName].isSource = true;\n\t\tmDataSources[_dataSourceName].isActive = true;\n\t\tRegistered(_dataOwner, _dataSourceName, _price, true);\n\t\treturn true;\n\t}\n\n\n\tfunction checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint,bool){\n\t\trequire(_subscriber != address(0));\n\t\treturn (_subscriber,\n\t\t\t_dataSourceName,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].price,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].startTime,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].endTime,\n\t\t\tisExpiredSubscription(_subscriber,_dataSourceName));\n\t}\n\n\tfunction getOwnerFromName(bytes32 _dataSourceName) public view returns(address){\n\t\treturn mDataSources[_dataSourceName].owner;\n\t}\n\tfunction getDataSource(bytes32 _dataSourceName) public view returns(address,uint256,uint256,uint256,bool,bool){\n\t\treturn (mDataSources[_dataSourceName].owner,\n\t\t\tmDataSources[_dataSourceName].price,\n\t\t\tmDataSources[_dataSourceName].volume,\n\t\t\tmDataSources[_dataSourceName].subscriptionsNumber,\n\t\t\tmDataSources[_dataSourceName].isSource,\n\t\t\tmDataSources[_dataSourceName].isActive);\n\t}\n\tfunction isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool){\n\t\treturn (FIXED_SUBSCRIPTION_PERIOD.add(now)) >= (mSubscribers[_subscriber][_dataSourceName].endTime);\n\t}\n\n\t/*\n\t\tInternal Functions\n\t*/\n\n\tfunction safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){\n\t\trequire(address(_from) != 0 && address(_to)!=0);\n\t\trequire(mToken.allowance(_from,address(this)) >= _amount);\n\t\trequire(mToken.transferFrom(_from,_to,_amount));\n\t\tSubscriptionPaid(_from, _to, _amount);\n\t\treturn true;\n\t}\n\n\t/*\n\t\tModifiers\n\t*/\n\tmodifier uniqueDataSourceName(bytes32 _testName){\n\t\trequire(!mDataSources[_testName].isSource);\n\t\t_;\n\t}\n\tmodifier validPrice(uint _testPrice){\n\t\t// overflow check (2**256 - 1) + 1 = 0\n\t\trequire(_testPrice>=0);\n\t\t_;\n\t}\n\tmodifier dataSourceAlive(bytes32 _testName){\n\t\trequire(mDataSources[_testName].isSource && mDataSources[_testName].isActive);\n\t\t_;\n\t}\n\tmodifier onlyDataOwner(bytes32 _dataSourceName, address _testAddress){\n\t\trequire(address(0) != _testAddress);\n\t\trequire(mDataSources[_dataSourceName].owner == _testAddress);\n\t\t_;\n\t}\n}",
+  "source": "pragma solidity ^0.4.18;\n\n\nimport \"./IMarketplace.sol\";\nimport \"./zeppelin-solidity/SafeMath.sol\";\n\ncontract IERC20 {\n  function balanceOf(address who) public constant returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  function allowance(address owner, address spender) public constant returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  function getTest() public view returns (address);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n\n\ncontract Marketplace is IMarketplace{\n\n\tusing SafeMath for uint256;\n\tusing SafeMath for uint;\n\n\t/*Data structures */\n\t\n\tstruct Datasource{\n\t\taddress signedBy;\n\t\taddress owner;\n\t\tuint256 price;\n\t\tuint256 volume;\n\t\tuint256 subscriptionsNumber;\n\t\tbool isSource;\n\t\tbool isActive;\n\t}\n\tstruct Subscription{\n\t\tuint256 price;\n\t\tuint startTime;\n\t\tuint endTime;\n\t}\n\n\tmapping(bytes32=>Datasource) mDataSources;\n\tmapping(address=>mapping(bytes32=>Subscription)) mSubscribers;\n\n\t// Enigma Token\n\tIERC20 public mToken;\n\t// Fixed time defined in the C'tor (unixTimeStamp)\n\tuint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;\n\n\n\tfunction Marketplace(address _tokenAddress) public {\n\t\tmToken = IERC20(_tokenAddress);\n\t}\n\n\tfunction isActiveDataSource(bytes32 _dataSourceName) external returns (bool){\n\t\treturn mDataSources[_dataSourceName].isActive;\n\t}\n\tfunction updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) \n\texternal\n\tvalidPrice(_newPrice) \n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool){\n\t\tmDataSources[_dataSourceName].price = _newPrice;\n\t\tPriceUpdate(msg.sender, _dataSourceName, _newPrice);\n\t\treturn true;\n\t} \n\tfunction changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) \n\texternal\n\tonlyDataOwner(_dataSourceName,msg.sender) \n\treturns (bool){\n\t\tmDataSources[_dataSourceName].isActive = status;\n\t\tActivityUpdate(msg.sender,_dataSourceName,status);\n\t\treturn true;\n\t}\n\tfunction subscribe(bytes32 _dataSourceName) \n\tpublic \n\tdataSourceAlive(_dataSourceName) \n\treturns (bool){\n\t\t// pay for subscription\n\t\tbool success = safeTransfer(msg.sender,mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price);\n\t\trequire(success); // LOL\n\t\t// update the dataSource\n\t\tmDataSources[_dataSourceName].volume = mDataSources[_dataSourceName].volume.add(mDataSources[_dataSourceName].price);\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = mDataSources[_dataSourceName].subscriptionsNumber.add(1);\n\t\t// update the subscription info\n\t\tmSubscribers[msg.sender][_dataSourceName].price = mDataSources[_dataSourceName].price;\n\t\tmSubscribers[msg.sender][_dataSourceName].startTime = now;\n\t\tmSubscribers[msg.sender][_dataSourceName].endTime = FIXED_SUBSCRIPTION_PERIOD.add(now);\n\t\tSubscribed(msg.sender,_dataSourceName, mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price, true);\n\t\treturn true;\n\t}\n\tfunction register(bytes32 _dataSourceName, uint _price, address _dataOwner) \n\tpublic \n\tvalidPrice(_price)\n\tuniqueDataSourceName(_dataSourceName) \n\treturns (bool){\n\t\trequire(_dataOwner != address(0));\n\t\tmDataSources[_dataSourceName].signedBy = msg.sender;\n\t\tmDataSources[_dataSourceName].owner = _dataOwner;\n\t\tmDataSources[_dataSourceName].price = _price;\n\t\tmDataSources[_dataSourceName].volume = 0;\n\t\tmDataSources[_dataSourceName].subscriptionsNumber = 0;\n\t\tmDataSources[_dataSourceName].isSource = true;\n\t\tmDataSources[_dataSourceName].isActive = true;\n\t\tRegistered(_dataOwner, _dataSourceName, _price, true);\n\t\treturn true;\n\t}\n\n\n\tfunction checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint,bool){\n\t\trequire(_subscriber != address(0));\n\t\treturn (_subscriber,\n\t\t\t_dataSourceName,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].price,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].startTime,\n\t\t\tmSubscribers[_subscriber][_dataSourceName].endTime,\n\t\t\tisExpiredSubscription(_subscriber,_dataSourceName));\n\t}\n\n\tfunction getOwnerFromName(bytes32 _dataSourceName) public view returns(address){\n\t\treturn mDataSources[_dataSourceName].owner;\n\t}\n\tfunction getDataSource(bytes32 _dataSourceName) public view returns(address,uint256,uint256,uint256,bool,bool){\n\t\treturn (mDataSources[_dataSourceName].owner,\n\t\t\tmDataSources[_dataSourceName].price,\n\t\t\tmDataSources[_dataSourceName].volume,\n\t\t\tmDataSources[_dataSourceName].subscriptionsNumber,\n\t\t\tmDataSources[_dataSourceName].isSource,\n\t\t\tmDataSources[_dataSourceName].isActive);\n\t}\n\tfunction isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool){\n\t\treturn (FIXED_SUBSCRIPTION_PERIOD.add(now)) >= (mSubscribers[_subscriber][_dataSourceName].endTime);\n\t}\n\n\t/*\n\t\tInternal Functions\n\t*/\n\n\tfunction safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){\n\t\trequire(address(_from) != 0 && address(_to)!=0);\n\t\trequire(mToken.allowance(_from,address(this)) >= _amount);\n\t\t// overflow check (2**256 - 1) + 1 = 0 inside SafeMath\n\t\trequire(mToken.transferFrom(_from,_to,_amount));\n\t\tSubscriptionPaid(_from, _to, _amount);\n\t\treturn true;\n\t}\n\n\t/*\n\t\tModifiers\n\t*/\n\tmodifier uniqueDataSourceName(bytes32 _testName){\n\t\trequire(!mDataSources[_testName].isSource);\n\t\t_;\n\t}\n\tmodifier validPrice(uint _testPrice){\n\t\trequire(_testPrice>=0);\n\t\t_;\n\t}\n\tmodifier dataSourceAlive(bytes32 _testName){\n\t\trequire(mDataSources[_testName].isSource && mDataSources[_testName].isActive);\n\t\t_;\n\t}\n\tmodifier onlyDataOwner(bytes32 _dataSourceName, address _testAddress){\n\t\trequire(address(0) != _testAddress);\n\t\trequire(mDataSources[_dataSourceName].owner == _testAddress);\n\t\t_;\n\t}\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/Marketplace.sol",
   "ast": {
     "attributes": {
@@ -8245,7 +8245,7 @@
                             },
                             "id": 718,
                             "name": "Identifier",
-                            "src": "5115:7:1"
+                            "src": "5172:7:1"
                           },
                           {
                             "attributes": {
@@ -8299,12 +8299,12 @@
                                     },
                                     "id": 719,
                                     "name": "Identifier",
-                                    "src": "5123:6:1"
+                                    "src": "5180:6:1"
                                   }
                                 ],
                                 "id": 720,
                                 "name": "MemberAccess",
-                                "src": "5123:19:1"
+                                "src": "5180:19:1"
                               },
                               {
                                 "attributes": {
@@ -8318,7 +8318,7 @@
                                 },
                                 "id": 721,
                                 "name": "Identifier",
-                                "src": "5143:5:1"
+                                "src": "5200:5:1"
                               },
                               {
                                 "attributes": {
@@ -8332,7 +8332,7 @@
                                 },
                                 "id": 722,
                                 "name": "Identifier",
-                                "src": "5149:3:1"
+                                "src": "5206:3:1"
                               },
                               {
                                 "attributes": {
@@ -8346,22 +8346,22 @@
                                 },
                                 "id": 723,
                                 "name": "Identifier",
-                                "src": "5153:7:1"
+                                "src": "5210:7:1"
                               }
                             ],
                             "id": 724,
                             "name": "FunctionCall",
-                            "src": "5123:38:1"
+                            "src": "5180:38:1"
                           }
                         ],
                         "id": 725,
                         "name": "FunctionCall",
-                        "src": "5115:47:1"
+                        "src": "5172:47:1"
                       }
                     ],
                     "id": 726,
                     "name": "ExpressionStatement",
-                    "src": "5115:47:1"
+                    "src": "5172:47:1"
                   },
                   {
                     "children": [
@@ -8405,7 +8405,7 @@
                             },
                             "id": 727,
                             "name": "Identifier",
-                            "src": "5166:16:1"
+                            "src": "5223:16:1"
                           },
                           {
                             "attributes": {
@@ -8419,7 +8419,7 @@
                             },
                             "id": 728,
                             "name": "Identifier",
-                            "src": "5183:5:1"
+                            "src": "5240:5:1"
                           },
                           {
                             "attributes": {
@@ -8433,7 +8433,7 @@
                             },
                             "id": 729,
                             "name": "Identifier",
-                            "src": "5190:3:1"
+                            "src": "5247:3:1"
                           },
                           {
                             "attributes": {
@@ -8447,17 +8447,17 @@
                             },
                             "id": 730,
                             "name": "Identifier",
-                            "src": "5195:7:1"
+                            "src": "5252:7:1"
                           }
                         ],
                         "id": 731,
                         "name": "FunctionCall",
-                        "src": "5166:37:1"
+                        "src": "5223:37:1"
                       }
                     ],
                     "id": 732,
                     "name": "ExpressionStatement",
-                    "src": "5166:37:1"
+                    "src": "5223:37:1"
                   },
                   {
                     "attributes": {
@@ -8479,22 +8479,22 @@
                         },
                         "id": 733,
                         "name": "Literal",
-                        "src": "5214:4:1"
+                        "src": "5271:4:1"
                       }
                     ],
                     "id": 734,
                     "name": "Return",
-                    "src": "5207:11:1"
+                    "src": "5264:11:1"
                   }
                 ],
                 "id": 735,
                 "name": "Block",
-                "src": "4999:223:1"
+                "src": "4999:280:1"
               }
             ],
             "id": 736,
             "name": "FunctionDefinition",
-            "src": "4909:313:1"
+            "src": "4909:370:1"
           },
           {
             "attributes": {
@@ -8523,17 +8523,17 @@
                         },
                         "id": 737,
                         "name": "ElementaryTypeName",
-                        "src": "5275:7:1"
+                        "src": "5332:7:1"
                       }
                     ],
                     "id": 738,
                     "name": "VariableDeclaration",
-                    "src": "5275:17:1"
+                    "src": "5332:17:1"
                   }
                 ],
                 "id": 739,
                 "name": "ParameterList",
-                "src": "5274:19:1"
+                "src": "5331:19:1"
               },
               {
                 "children": [
@@ -8571,7 +8571,7 @@
                             },
                             "id": 740,
                             "name": "Identifier",
-                            "src": "5297:7:1"
+                            "src": "5354:7:1"
                           },
                           {
                             "attributes": {
@@ -8619,7 +8619,7 @@
                                         },
                                         "id": 741,
                                         "name": "Identifier",
-                                        "src": "5306:12:1"
+                                        "src": "5363:12:1"
                                       },
                                       {
                                         "attributes": {
@@ -8633,47 +8633,47 @@
                                         },
                                         "id": 742,
                                         "name": "Identifier",
-                                        "src": "5319:9:1"
+                                        "src": "5376:9:1"
                                       }
                                     ],
                                     "id": 743,
                                     "name": "IndexAccess",
-                                    "src": "5306:23:1"
+                                    "src": "5363:23:1"
                                   }
                                 ],
                                 "id": 744,
                                 "name": "MemberAccess",
-                                "src": "5306:32:1"
+                                "src": "5363:32:1"
                               }
                             ],
                             "id": 745,
                             "name": "UnaryOperation",
-                            "src": "5305:33:1"
+                            "src": "5362:33:1"
                           }
                         ],
                         "id": 746,
                         "name": "FunctionCall",
-                        "src": "5297:42:1"
+                        "src": "5354:42:1"
                       }
                     ],
                     "id": 747,
                     "name": "ExpressionStatement",
-                    "src": "5297:42:1"
+                    "src": "5354:42:1"
                   },
                   {
                     "id": 748,
                     "name": "PlaceholderStatement",
-                    "src": "5343:1:1"
+                    "src": "5400:1:1"
                   }
                 ],
                 "id": 749,
                 "name": "Block",
-                "src": "5293:55:1"
+                "src": "5350:55:1"
               }
             ],
             "id": 750,
             "name": "ModifierDefinition",
-            "src": "5245:103:1"
+            "src": "5302:103:1"
           },
           {
             "attributes": {
@@ -8702,17 +8702,17 @@
                         },
                         "id": 751,
                         "name": "ElementaryTypeName",
-                        "src": "5370:4:1"
+                        "src": "5427:4:1"
                       }
                     ],
                     "id": 752,
                     "name": "VariableDeclaration",
-                    "src": "5370:15:1"
+                    "src": "5427:15:1"
                   }
                 ],
                 "id": 753,
                 "name": "ParameterList",
-                "src": "5369:17:1"
+                "src": "5426:17:1"
               },
               {
                 "children": [
@@ -8750,7 +8750,7 @@
                             },
                             "id": 754,
                             "name": "Identifier",
-                            "src": "5431:7:1"
+                            "src": "5447:7:1"
                           },
                           {
                             "attributes": {
@@ -8779,7 +8779,7 @@
                                 },
                                 "id": 755,
                                 "name": "Identifier",
-                                "src": "5439:10:1"
+                                "src": "5455:10:1"
                               },
                               {
                                 "attributes": {
@@ -8796,37 +8796,37 @@
                                 },
                                 "id": 756,
                                 "name": "Literal",
-                                "src": "5451:1:1"
+                                "src": "5467:1:1"
                               }
                             ],
                             "id": 757,
                             "name": "BinaryOperation",
-                            "src": "5439:13:1"
+                            "src": "5455:13:1"
                           }
                         ],
                         "id": 758,
                         "name": "FunctionCall",
-                        "src": "5431:22:1"
+                        "src": "5447:22:1"
                       }
                     ],
                     "id": 759,
                     "name": "ExpressionStatement",
-                    "src": "5431:22:1"
+                    "src": "5447:22:1"
                   },
                   {
                     "id": 760,
                     "name": "PlaceholderStatement",
-                    "src": "5457:1:1"
+                    "src": "5473:1:1"
                   }
                 ],
                 "id": 761,
                 "name": "Block",
-                "src": "5386:76:1"
+                "src": "5443:35:1"
               }
             ],
             "id": 762,
             "name": "ModifierDefinition",
-            "src": "5350:112:1"
+            "src": "5407:71:1"
           },
           {
             "attributes": {
@@ -8855,17 +8855,17 @@
                         },
                         "id": 763,
                         "name": "ElementaryTypeName",
-                        "src": "5489:7:1"
+                        "src": "5505:7:1"
                       }
                     ],
                     "id": 764,
                     "name": "VariableDeclaration",
-                    "src": "5489:17:1"
+                    "src": "5505:17:1"
                   }
                 ],
                 "id": 765,
                 "name": "ParameterList",
-                "src": "5488:19:1"
+                "src": "5504:19:1"
               },
               {
                 "children": [
@@ -8903,7 +8903,7 @@
                             },
                             "id": 766,
                             "name": "Identifier",
-                            "src": "5511:7:1"
+                            "src": "5527:7:1"
                           },
                           {
                             "attributes": {
@@ -8954,7 +8954,7 @@
                                         },
                                         "id": 767,
                                         "name": "Identifier",
-                                        "src": "5519:12:1"
+                                        "src": "5535:12:1"
                                       },
                                       {
                                         "attributes": {
@@ -8968,17 +8968,17 @@
                                         },
                                         "id": 768,
                                         "name": "Identifier",
-                                        "src": "5532:9:1"
+                                        "src": "5548:9:1"
                                       }
                                     ],
                                     "id": 769,
                                     "name": "IndexAccess",
-                                    "src": "5519:23:1"
+                                    "src": "5535:23:1"
                                   }
                                 ],
                                 "id": 770,
                                 "name": "MemberAccess",
-                                "src": "5519:32:1"
+                                "src": "5535:32:1"
                               },
                               {
                                 "attributes": {
@@ -9014,7 +9014,7 @@
                                         },
                                         "id": 771,
                                         "name": "Identifier",
-                                        "src": "5555:12:1"
+                                        "src": "5571:12:1"
                                       },
                                       {
                                         "attributes": {
@@ -9028,47 +9028,47 @@
                                         },
                                         "id": 772,
                                         "name": "Identifier",
-                                        "src": "5568:9:1"
+                                        "src": "5584:9:1"
                                       }
                                     ],
                                     "id": 773,
                                     "name": "IndexAccess",
-                                    "src": "5555:23:1"
+                                    "src": "5571:23:1"
                                   }
                                 ],
                                 "id": 774,
                                 "name": "MemberAccess",
-                                "src": "5555:32:1"
+                                "src": "5571:32:1"
                               }
                             ],
                             "id": 775,
                             "name": "BinaryOperation",
-                            "src": "5519:68:1"
+                            "src": "5535:68:1"
                           }
                         ],
                         "id": 776,
                         "name": "FunctionCall",
-                        "src": "5511:77:1"
+                        "src": "5527:77:1"
                       }
                     ],
                     "id": 777,
                     "name": "ExpressionStatement",
-                    "src": "5511:77:1"
+                    "src": "5527:77:1"
                   },
                   {
                     "id": 778,
                     "name": "PlaceholderStatement",
-                    "src": "5592:1:1"
+                    "src": "5608:1:1"
                   }
                 ],
                 "id": 779,
                 "name": "Block",
-                "src": "5507:90:1"
+                "src": "5523:90:1"
               }
             ],
             "id": 780,
             "name": "ModifierDefinition",
-            "src": "5464:133:1"
+            "src": "5480:133:1"
           },
           {
             "attributes": {
@@ -9097,12 +9097,12 @@
                         },
                         "id": 781,
                         "name": "ElementaryTypeName",
-                        "src": "5622:7:1"
+                        "src": "5638:7:1"
                       }
                     ],
                     "id": 782,
                     "name": "VariableDeclaration",
-                    "src": "5622:23:1"
+                    "src": "5638:23:1"
                   },
                   {
                     "attributes": {
@@ -9123,17 +9123,17 @@
                         },
                         "id": 783,
                         "name": "ElementaryTypeName",
-                        "src": "5647:7:1"
+                        "src": "5663:7:1"
                       }
                     ],
                     "id": 784,
                     "name": "VariableDeclaration",
-                    "src": "5647:20:1"
+                    "src": "5663:20:1"
                   }
                 ],
                 "id": 785,
                 "name": "ParameterList",
-                "src": "5621:47:1"
+                "src": "5637:47:1"
               },
               {
                 "children": [
@@ -9171,7 +9171,7 @@
                             },
                             "id": 786,
                             "name": "Identifier",
-                            "src": "5672:7:1"
+                            "src": "5688:7:1"
                           },
                           {
                             "attributes": {
@@ -9220,7 +9220,7 @@
                                     },
                                     "id": 787,
                                     "name": "ElementaryTypeNameExpression",
-                                    "src": "5680:7:1"
+                                    "src": "5696:7:1"
                                   },
                                   {
                                     "attributes": {
@@ -9237,12 +9237,12 @@
                                     },
                                     "id": 788,
                                     "name": "Literal",
-                                    "src": "5688:1:1"
+                                    "src": "5704:1:1"
                                   }
                                 ],
                                 "id": 789,
                                 "name": "FunctionCall",
-                                "src": "5680:10:1"
+                                "src": "5696:10:1"
                               },
                               {
                                 "attributes": {
@@ -9256,22 +9256,22 @@
                                 },
                                 "id": 790,
                                 "name": "Identifier",
-                                "src": "5694:12:1"
+                                "src": "5710:12:1"
                               }
                             ],
                             "id": 791,
                             "name": "BinaryOperation",
-                            "src": "5680:26:1"
+                            "src": "5696:26:1"
                           }
                         ],
                         "id": 792,
                         "name": "FunctionCall",
-                        "src": "5672:35:1"
+                        "src": "5688:35:1"
                       }
                     ],
                     "id": 793,
                     "name": "ExpressionStatement",
-                    "src": "5672:35:1"
+                    "src": "5688:35:1"
                   },
                   {
                     "children": [
@@ -9307,7 +9307,7 @@
                             },
                             "id": 794,
                             "name": "Identifier",
-                            "src": "5711:7:1"
+                            "src": "5727:7:1"
                           },
                           {
                             "attributes": {
@@ -9358,7 +9358,7 @@
                                         },
                                         "id": 795,
                                         "name": "Identifier",
-                                        "src": "5719:12:1"
+                                        "src": "5735:12:1"
                                       },
                                       {
                                         "attributes": {
@@ -9372,17 +9372,17 @@
                                         },
                                         "id": 796,
                                         "name": "Identifier",
-                                        "src": "5732:15:1"
+                                        "src": "5748:15:1"
                                       }
                                     ],
                                     "id": 797,
                                     "name": "IndexAccess",
-                                    "src": "5719:29:1"
+                                    "src": "5735:29:1"
                                   }
                                 ],
                                 "id": 798,
                                 "name": "MemberAccess",
-                                "src": "5719:35:1"
+                                "src": "5735:35:1"
                               },
                               {
                                 "attributes": {
@@ -9396,47 +9396,47 @@
                                 },
                                 "id": 799,
                                 "name": "Identifier",
-                                "src": "5758:12:1"
+                                "src": "5774:12:1"
                               }
                             ],
                             "id": 800,
                             "name": "BinaryOperation",
-                            "src": "5719:51:1"
+                            "src": "5735:51:1"
                           }
                         ],
                         "id": 801,
                         "name": "FunctionCall",
-                        "src": "5711:60:1"
+                        "src": "5727:60:1"
                       }
                     ],
                     "id": 802,
                     "name": "ExpressionStatement",
-                    "src": "5711:60:1"
+                    "src": "5727:60:1"
                   },
                   {
                     "id": 803,
                     "name": "PlaceholderStatement",
-                    "src": "5775:1:1"
+                    "src": "5791:1:1"
                   }
                 ],
                 "id": 804,
                 "name": "Block",
-                "src": "5668:112:1"
+                "src": "5684:112:1"
               }
             ],
             "id": 805,
             "name": "ModifierDefinition",
-            "src": "5599:181:1"
+            "src": "5615:181:1"
           }
         ],
         "id": 806,
         "name": "ContractDefinition",
-        "src": "719:5063:1"
+        "src": "719:5079:1"
       }
     ],
     "id": 807,
     "name": "SourceUnit",
-    "src": "0:5782:1"
+    "src": "0:5798:1"
   },
   "compiler": {
     "name": "solc",
@@ -9444,5 +9444,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-01-21T16:28:42.760Z"
+  "updatedAt": "2018-01-23T15:19:03.767Z"
 }
