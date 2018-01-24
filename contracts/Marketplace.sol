@@ -22,6 +22,7 @@ contract Marketplace{ //is IMarketplace{
 	using SafeMath for uint;
 
 	/*Data structures */
+
 	struct Order{
         bytes32 dataSourceName;
         address subscriber;
@@ -48,8 +49,6 @@ contract Marketplace{ //is IMarketplace{
 	uint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;
 	// the Contract deployer
 	address mMarketPlaceOwner;
-    // contracts total balance
-    uint256 public mTotalBalance;
     // all open/closed orders
     Order [] mOrders;
     // all providers
@@ -60,13 +59,23 @@ contract Marketplace{ //is IMarketplace{
 		mToken = IERC20(_tokenAddress);
 		mMarketPlaceOwner = msg.sender;
 	}
+	/* withraw logic */
+	function withdraw(bytes32 _dataSourceName) 
+	external 
+	dataProviderOnly(_dataSourceName)  
+	returns (bool success){
+		uint256 withdrawAmount = changeAndGetWithdrawAmount(_dataSourceName);
+		require(withdrawAmount > 0);
+		bool success = safeToProviderTransfer(_dataSourceName,withdrawAmount);
+		require(success);
+	}
 	/* data subscription logic */
 	function subscribe(bytes32 _dataSourceName) 
 	external 
 	providerExist(_dataSourceName)
 	providerNotPunished(_dataSourceName) 
 	returns(bool){
-		bool success = safeToMarketTransfer(msg.sender,this,mProviders[_dataSourceName]);
+		bool success = safeToMarketPlaceTransfer(msg.sender,this,mProviders[_dataSourceName]);
 		require(success);
 		mOrders.push(Order({
 			dataSourceName : _dataSourceName,
@@ -128,7 +137,25 @@ contract Marketplace{ //is IMarketplace{
     }
 
     /* provider withdraw logic */
-    function getWithdrawAmount(bytes32 _dataSourceName) external view returns (uint256 available){
+    function changeAndGetWithdrawAmount(bytes32 _dataSourceName) 
+    internal 
+    dataProviderOnly(_dataSourceName) 
+    returns (uint256 available){
+        uint256  accumulated;
+        for(uint i=0; i<mOrders.length; i++){
+            Order storage order = mOrders[i];
+            Provider storage provider = mProviders[order.dataSourceName];
+            if(order.dataSourceName == _dataSourceName && order.dataSourceName == provider.name){
+                uint256 current =  handleGetWithdraw(order,provider);   
+                if(current > 0 && isExpired(order)) {
+                	mOrders[i].isPaid = true;
+                }
+                accumulated = accumulated.add(current);
+            }
+        }
+        return accumulated;
+    }
+    function getWithdrawAmount(bytes32 _dataSourceName) public view returns (uint256 available){
         uint256  accumulated;
         for(uint i=0; i<mOrders.length; i++){
             Order storage order = mOrders[i];
@@ -147,15 +174,26 @@ contract Marketplace{ //is IMarketplace{
 
     /* internal functions */
 
-    // work on that + events declaration 
-	function safeToMarketTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
-		require(address(_from) != 0 && address(_to)!=0);
+    // when a subscriber registers they move tokens to the contract
+	function safeToMarketPlaceTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
+		require( _from != address(0) && _to != address(0));
 		require(mToken.allowance(_from,address(this)) >= _amount);
 		require(mToken.transferFrom(_from,_to,_amount));
 		SubscriptionPaid(_from, _to, _amount);
 		return true;
 	}
-	// is subcription expired
+	// transfer tokens to a data provider 
+	function safeToProviderTransfer(bytes32 _dataSourceName,uint256 _amount) 
+	internal 
+	dataProviderOnly(_dataSourceName) 
+	returns (bool){
+		require(mProviders[_dataSourceName].owner != address(0));
+		require(mProviders[_dataSourceName].isProvider);
+		require(mToken.transfer(_dataProvider,_amount));
+		TransferToProvider(mProviders[_dataSourceName].owner,_dataSourceName,_amount);
+		return true;
+	}
+	// is subcription expired 
 	function isExpired(Order _order) internal view returns (bool){
         return now > _order.startTime + FIXED_SUBSCRIPTION_PERIOD; 
     }
@@ -164,7 +202,7 @@ contract Marketplace{ //is IMarketplace{
         if(_provider.punishTime > _order.endTime){
             return _order.price;   
         }
-        return (_provider.punishTime / _order.endTime) * _order.price;
+        return (_provider.punishTime.div(_order.endTime)).mul(_order.price);
     }
     // withdraw relaed => handle an instance provider calculation
     function handleGetWithdraw(Order _order, Provider _provider) private view returns(uint256 amount){
@@ -181,7 +219,8 @@ contract Marketplace{ //is IMarketplace{
     }
     // subscriber related => relative refund of an order instance
     function calcRelativeRefund(Order _order, Provider _provider) internal view returns(uint256 amount){
-        return (1 - _provider.punishTime/ _order.endTime)  * _provider.price;
+    	uint256 one =1;
+        return (one.sub(_provider.punishTime.div(_order.endTime))).mul(_provider.price);
     }
     /* modifiers*/
     modifier ownerOnly(){
@@ -200,4 +239,20 @@ contract Marketplace{ //is IMarketplace{
     	require(!mProviders[_dataSourceName].isPunished);
     	_;
     }
+    modifier dataProviderOnly(bytes32 _dataSourceName){
+    	require(mProviders[_dataSourceName].isProvider);
+    	require(mProviders[_dataSourceName].owner == msg.sender);
+    	_;
+    }
+    /* events - move to the interface later */
+    event Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);
+	event SubscriptionPaid(address indexed from, address indexed to, uint256 value);
+	event Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);
+	event PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);
+	event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);
+	// new events 
+	// provifer got paid 
+	event TransferToProvider(address indexed dataOwner, bytes32 indexed _dataSourceName, uint256 _amount);
+	// provider finished withdraw process
+	event ProviderWithdraw(address indexed dataOwner, bytes32 indexed _dataSourceName, uint _amount);
 }
