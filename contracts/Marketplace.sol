@@ -23,13 +23,12 @@ contract Marketplace{ //is IMarketplace{
 
 	/*Data structures */
 	struct Order{
-        bytes32 providerName;
+        bytes32 dataSourceName;
         address subscriber;
         address provider;
         uint price;
         uint startTime;
         uint endTime;
-        bool isPunished;
         bool isPaid;
     }
     struct Provider{
@@ -61,19 +60,62 @@ contract Marketplace{ //is IMarketplace{
 		mToken = IERC20(_tokenAddress);
 		mMarketPlaceOwner = msg.sender;
 	}
+	/* data subscription logic */
+	function subscribe(bytes32 _dataSourceName) 
+	external 
+	providerExist(_dataSourceName)
+	providerNotPunished(_dataSourceName) 
+	returns(bool){
+		bool success = safeToMarketTransfer(msg.sender,this,mProviders[_dataSourceName]);
+		require(success);
+		mOrders.push(Order({
+			dataSourceName : _dataSourceName,
+			subscriber : msg.sender,
+			provider : mProviders[_dataSourceName].owner,
+			price : mProviders[_dataSourceName].price,
+			startTime : now,
+			endTime : now + FIXED_SUBSCRIPTION_PERIOD,
+			isPaid : true
+			}));
+		return true;
+	}
+	/* name registration logic */
+	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) 
+	external 
+	uniqueName(_dataSourceName) 
+	returns(bool){
+		require(_dataOwner != address(0));
+		require(_price.add(1) > _price); // overflow check (2**256 - 1) + 1 = 0 inside SafeMath
+		mProviders[_dataSourceName].owner = _dataOwner;
+		mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(_price);
+		mProviders[_dataSourceName].subscriptionsNum =mProviders[_dataSourceName].subscriptionsNum.add(1);
+		mProviders[_dataSourceName].name = _dataSourceName;
+		mProviders[_dataSourceName].price = _price;
+		mProviders[_dataSourceName].isPunished = false;
+		mProviders[_dataSourceName].punishTime = 0;
+		mProviders[_dataSourceName].isProvider = true;
+		return true;
+	}
     /* penallty,punishment logic */
-    function setPenalty(bytes32 _dataProviderName, bool _isPunished) external ownerOnly providerExist(_dataProviderName) returns(bool){
-        mProviders[_dataProviderName].isPunished = _isPunished;
-        mProviders[_dataProviderName].punishTime = now;
+    function setPenalty(bytes32 _dataSourceName, bool _isPunished) 
+    external 
+    ownerOnly 
+    providerExist(_dataSourceName) 
+    returns(bool){
+        mProviders[_dataSourceName].isPunished = _isPunished;
+        mProviders[_dataSourceName].punishTime = now;
         return true;
     }
     /* subscriber refund logic */
     
-    function getRefundAmount(address _subscriber) external view returns (uint256 available){
+    function getRefundAmount(address _subscriber) 
+    external 
+    view 
+    returns (uint256 available){
         uint accumulated;
         for(uint i=0; i<mOrders.length;i++){
             Order storage order = mOrders[i];
-            Provider storage provider = mProviders[order.providerName];
+            Provider storage provider = mProviders[order.dataSourceName];
             if(order.subscriber == _subscriber && !order.isPaid){ // not paid yet
                 if(isPunished(provider.name)){ // provider punished
                     if(provider.punishTime < order.endTime){ //provider punished before subscription expired 
@@ -84,23 +126,49 @@ contract Marketplace{ //is IMarketplace{
         }
         return accumulated;
     }
-    function calcRelativeRefund(Order _order, Provider _provider) internal view returns(uint256 amount){
-        return (1 - _provider.punishTime/ _order.endTime)  * _provider.price;
-    }
+
     /* provider withdraw logic */
-    function getWithdrawAmount(bytes32 dataName) external view returns (uint256 available){
+    function getWithdrawAmount(bytes32 _dataSourceName) external view returns (uint256 available){
         uint256  accumulated;
         for(uint i=0; i<mOrders.length; i++){
             Order storage order = mOrders[i];
-            Provider storage provider = mProviders[order.providerName];
-            if(order.providerName == dataName && order.providerName == provider.name){
+            Provider storage provider = mProviders[order.dataSourceName];
+            if(order.dataSourceName == _dataSourceName && order.dataSourceName == provider.name){
                 accumulated += handleGetWithdraw(order,provider);   
             }
         }
         return accumulated;
     }
+
+
+    function isPunished(bytes32 _dataSourceName) public view returns(bool){
+        return mProviders[_dataSourceName].isPunished;
+    }
+
+    /* internal functions */
+
+    // work on that + events declaration 
+	function safeToMarketTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
+		require(address(_from) != 0 && address(_to)!=0);
+		require(mToken.allowance(_from,address(this)) >= _amount);
+		require(mToken.transferFrom(_from,_to,_amount));
+		SubscriptionPaid(_from, _to, _amount);
+		return true;
+	}
+	// is subcription expired
+	function isExpired(Order _order) internal view returns (bool){
+        return now > _order.startTime + FIXED_SUBSCRIPTION_PERIOD; 
+    }
+	// relative amount to withdraw from a punished provider
+	function calcRelativeWithdraw(Order _order,Provider _provider) internal view returns (uint256 amount){
+        if(_provider.punishTime > _order.endTime){
+            return _order.price;   
+        }
+        return (_provider.punishTime / _order.endTime) * _order.price;
+    }
+    // withdraw relaed => handle an instance provider calculation
     function handleGetWithdraw(Order _order, Provider _provider) private view returns(uint256 amount){
-        if(_order.providerName == _provider.name && !_order.isPaid){
+        if(_order.dataSourceName == _provider.name && !_order.isPaid){
                 if(isExpired(_order)){
                     if(isPunished(_provider.name)){
                         return calcRelativeWithdraw(_order,_provider);
@@ -111,25 +179,25 @@ contract Marketplace{ //is IMarketplace{
             }
             return 0;
     }
-    function isExpired(Order _order) internal view returns (bool){
-        return now > _order.startTime + FIXED_SUBSCRIPTION_PERIOD; 
-    }
-    function isPunished(bytes32 _dataProviderName) public view returns(bool){
-        return mProviders[_dataProviderName].isPunished;
-    }
-    function calcRelativeWithdraw(Order _order,Provider _provider) internal view returns (uint256 amount){
-        if(_provider.punishTime > _order.endTime){
-            return _order.price;   
-        }
-        return (_provider.punishTime / _order.endTime) * _order.price;
+    // subscriber related => relative refund of an order instance
+    function calcRelativeRefund(Order _order, Provider _provider) internal view returns(uint256 amount){
+        return (1 - _provider.punishTime/ _order.endTime)  * _provider.price;
     }
     /* modifiers*/
     modifier ownerOnly(){
         require(msg.sender == mMarketPlaceOwner);
         _;
     }
-    modifier providerExist(bytes32 _dataProviderName){
-        require(mProviders[_dataProviderName].isProvider);
+    modifier providerExist(bytes32 _dataSourceName){
+        require(mProviders[_dataSourceName].isProvider);
         _;
+    }
+    modifier uniqueName(bytes32 _dataSourceName){
+    	require(!mProviders[_dataSourceName].isProvider);
+    	_;
+    }
+    modifier providerNotPunished(bytes32 _dataSourceName){
+    	require(!mProviders[_dataSourceName].isPunished);
+    	_;
     }
 }
