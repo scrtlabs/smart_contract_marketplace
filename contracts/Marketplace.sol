@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 
-import "./IMarketplace.sol";
+//import "./IMarketplace.sol";
 import "./zeppelin-solidity/SafeMath.sol";
 
 contract IERC20 {
@@ -16,152 +16,120 @@ contract IERC20 {
 }
 
 
-contract Marketplace is IMarketplace{
+contract Marketplace{ //is IMarketplace{
 
 	using SafeMath for uint256;
 	using SafeMath for uint;
 
 	/*Data structures */
-	
-	struct Datasource{
-		address signedBy;
-		address owner;
-		uint256 price;
-		uint256 volume;
-		uint256 subscriptionsNumber;
-		bool isSource;
-		bool isActive;
-	}
-	struct Subscription{
-		uint256 price;
-		uint startTime;
-		uint endTime;
-	}
-
-	mapping(bytes32=>Datasource) mDataSources;
-	mapping(address=>mapping(bytes32=>Subscription)) mSubscribers;
+	struct Order{
+        bytes32 providerName;
+        address subscriber;
+        address provider;
+        uint price;
+        uint startTime;
+        uint endTime;
+        bool isPunished;
+        bool isPaid;
+    }
+    struct Provider{
+        address owner;
+        uint volume;
+        uint subscriptionsNum;
+        bytes32 name;
+        uint price;
+        bool isPunished;
+        uint punishTime;
+        bool isProvider;
+    }
 
 	// Enigma Token
 	IERC20 public mToken;
-	// Fixed time defined in the C'tor (unixTimeStamp)
+	// Fixed time defined (unixTimeStamp)
 	uint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;
-
+	// the Contract deployer
+	address mMarketPlaceOwner;
+    // contracts total balance
+    uint256 public mTotalBalance;
+    // all open/closed orders
+    Order [] mOrders;
+    // all providers
+    mapping(bytes32 => Provider) mProviders;
 
 	function Marketplace(address _tokenAddress) public {
+		require(_tokenAddress != address(0));
 		mToken = IERC20(_tokenAddress);
+		mMarketPlaceOwner = msg.sender;
 	}
-
-	function isActiveDataSource(bytes32 _dataSourceName) external returns (bool){
-		return mDataSources[_dataSourceName].isActive;
-	}
-	function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) 
-	external
-	validPrice(_newPrice) 
-	onlyDataOwner(_dataSourceName,msg.sender) 
-	returns (bool){
-		mDataSources[_dataSourceName].price = _newPrice;
-		PriceUpdate(msg.sender, _dataSourceName, _newPrice);
-		return true;
-	} 
-	function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) 
-	external
-	onlyDataOwner(_dataSourceName,msg.sender) 
-	returns (bool){
-		mDataSources[_dataSourceName].isActive = status;
-		ActivityUpdate(msg.sender,_dataSourceName,status);
-		return true;
-	}
-	function subscribe(bytes32 _dataSourceName) 
-	public 
-	dataSourceAlive(_dataSourceName) 
-	returns (bool){
-		// pay for subscription
-		bool success = safeTransfer(msg.sender,mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price);
-		require(success); // LOL
-		// update the dataSource
-		mDataSources[_dataSourceName].volume = mDataSources[_dataSourceName].volume.add(mDataSources[_dataSourceName].price);
-		mDataSources[_dataSourceName].subscriptionsNumber = mDataSources[_dataSourceName].subscriptionsNumber.add(1);
-		// update the subscription info
-		mSubscribers[msg.sender][_dataSourceName].price = mDataSources[_dataSourceName].price;
-		mSubscribers[msg.sender][_dataSourceName].startTime = now;
-		mSubscribers[msg.sender][_dataSourceName].endTime = FIXED_SUBSCRIPTION_PERIOD.add(now);
-		Subscribed(msg.sender,_dataSourceName, mDataSources[_dataSourceName].owner,mDataSources[_dataSourceName].price, true);
-		return true;
-	}
-	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) 
-	public 
-	validPrice(_price)
-	uniqueDataSourceName(_dataSourceName) 
-	returns (bool){
-		require(_dataOwner != address(0));
-		mDataSources[_dataSourceName].signedBy = msg.sender;
-		mDataSources[_dataSourceName].owner = _dataOwner;
-		mDataSources[_dataSourceName].price = _price;
-		mDataSources[_dataSourceName].volume = 0;
-		mDataSources[_dataSourceName].subscriptionsNumber = 0;
-		mDataSources[_dataSourceName].isSource = true;
-		mDataSources[_dataSourceName].isActive = true;
-		Registered(_dataOwner, _dataSourceName, _price, true);
-		return true;
-	}
-
-
-	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint,bool){
-		require(_subscriber != address(0));
-		return (_subscriber,
-			_dataSourceName,
-			mSubscribers[_subscriber][_dataSourceName].price,
-			mSubscribers[_subscriber][_dataSourceName].startTime,
-			mSubscribers[_subscriber][_dataSourceName].endTime,
-			isExpiredSubscription(_subscriber,_dataSourceName));
-	}
-
-	function getOwnerFromName(bytes32 _dataSourceName) public view returns(address){
-		return mDataSources[_dataSourceName].owner;
-	}
-	function getDataSource(bytes32 _dataSourceName) public view returns(address,uint256,uint256,uint256,bool,bool){
-		return (mDataSources[_dataSourceName].owner,
-			mDataSources[_dataSourceName].price,
-			mDataSources[_dataSourceName].volume,
-			mDataSources[_dataSourceName].subscriptionsNumber,
-			mDataSources[_dataSourceName].isSource,
-			mDataSources[_dataSourceName].isActive);
-	}
-	function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool){
-		return (FIXED_SUBSCRIPTION_PERIOD.add(now)) >= (mSubscribers[_subscriber][_dataSourceName].endTime);
-	}
-
-	/*
-		Internal Functions
-	*/
-
-	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
-		require(address(_from) != 0 && address(_to)!=0);
-		require(mToken.allowance(_from,address(this)) >= _amount);
-		// overflow check (2**256 - 1) + 1 = 0 inside SafeMath
-		require(mToken.transferFrom(_from,_to,_amount));
-		SubscriptionPaid(_from, _to, _amount);
-		return true;
-	}
-
-	/*
-		Modifiers
-	*/
-	modifier uniqueDataSourceName(bytes32 _testName){
-		require(!mDataSources[_testName].isSource);
-		_;
-	}
-	modifier validPrice(uint _testPrice){
-		require(_testPrice>=0);
-		_;
-	}
-	modifier dataSourceAlive(bytes32 _testName){
-		require(mDataSources[_testName].isSource && mDataSources[_testName].isActive);
-		_;
-	}
-	modifier onlyDataOwner(bytes32 _dataSourceName, address _testAddress){
-		require(address(0) != _testAddress);
-		require(mDataSources[_dataSourceName].owner == _testAddress);
-		_;
-	}
+    /* penallty,punishment logic */
+    function setPenalty(bytes32 _dataProviderName, bool _isPunished) external ownerOnly providerExist(_dataProviderName) returns(bool){
+        mProviders[_dataProviderName].isPunished = _isPunished;
+        mProviders[_dataProviderName].punishTime = now;
+        return true;
+    }
+    /* subscriber refund logic */
+    
+    function getRefundAmount(address _subscriber) external view returns (uint256 available){
+        uint accumulated;
+        for(uint i=0; i<mOrders.length;i++){
+            Order storage order = mOrders[i];
+            Provider storage provider = mProviders[order.providerName];
+            if(order.subscriber == _subscriber && !order.isPaid){ // not paid yet
+                if(isPunished(provider.name)){ // provider punished
+                    if(provider.punishTime < order.endTime){ //provider punished before subscription expired 
+                        accumulated += calcRelativeRefund(order,provider);
+                    }
+                }
+            }
+        }
+        return accumulated;
+    }
+    function calcRelativeRefund(Order _order, Provider _provider) internal view returns(uint256 amount){
+        return (1 - _provider.punishTime/ _order.endTime)  * _provider.price;
+    }
+    /* provider withdraw logic */
+    function getWithdrawAmount(bytes32 dataName) external view returns (uint256 available){
+        uint256  accumulated;
+        for(uint i=0; i<mOrders.length; i++){
+            Order storage order = mOrders[i];
+            Provider storage provider = mProviders[order.providerName];
+            if(order.providerName == dataName && order.providerName == provider.name){
+                accumulated += handleGetWithdraw(order,provider);   
+            }
+        }
+        return accumulated;
+    }
+    function handleGetWithdraw(Order _order, Provider _provider) private view returns(uint256 amount){
+        if(_order.providerName == _provider.name && !_order.isPaid){
+                if(isExpired(_order)){
+                    if(isPunished(_provider.name)){
+                        return calcRelativeWithdraw(_order,_provider);
+                    }else{
+                        return _order.price;
+                    }
+                }
+            }
+            return 0;
+    }
+    function isExpired(Order _order) internal view returns (bool){
+        return now > _order.startTime + FIXED_SUBSCRIPTION_PERIOD; 
+    }
+    function isPunished(bytes32 _dataProviderName) public view returns(bool){
+        return mProviders[_dataProviderName].isPunished;
+    }
+    function calcRelativeWithdraw(Order _order,Provider _provider) internal view returns (uint256 amount){
+        if(_provider.punishTime > _order.endTime){
+            return _order.price;   
+        }
+        return (_provider.punishTime / _order.endTime) * _order.price;
+    }
+    /* modifiers*/
+    modifier ownerOnly(){
+        require(msg.sender == mMarketPlaceOwner);
+        _;
+    }
+    modifier providerExist(bytes32 _dataProviderName){
+        require(mProviders[_dataProviderName].isProvider);
+        _;
+    }
 }
