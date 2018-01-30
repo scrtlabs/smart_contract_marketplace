@@ -7,7 +7,6 @@ contract Migrations {
   modifier restricted() {
     if (msg.sender == owner) _;
   }
-
   function Migrations() public {
     owner = msg.sender;
   }
@@ -21,3 +20,5 @@ contract Migrations {
     upgraded.setCompleted(last_completed_migration);
   }
 }
+
+
