@@ -49,8 +49,19 @@ contract IMarketplace{
 	*@return uint - subscription start time
 	*@return uint - subscription end time
 	*@return bool - is subscription expired, true = expired, false = not expired
+	*@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) 
+    *@return bool - isPunishedProvider , is the provider of the subscription punished
+    *@return bool - isOrder , true if the order exists, false otherwise
 	*/
-	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address,bytes32,uint,uint,uint,bool);
+	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address subscriber,
+        bytes32 dataSourceName,
+        uint price,
+        uint startTime,
+        uint endTime,
+        bool isExpired,
+        bool isPaid, 
+        bool isPunishedProvider,
+        bool isOrder);
 	/*
 	*@dev get the address of the owner given a data source name. 
 	*@param _dataSourceName the name of the data source
@@ -64,17 +75,25 @@ contract IMarketplace{
 	*@return uint256 price - the current price of the data set 
 	*@return uint256 volume - the total sum of the tokens paid since registration.
 	*@return uint256 - total counter of the subscriptions number to that data source
-	*@return bool isSource - should always be true if registry exists
+	*@return bool isProvider - should always be true if registry exists
 	*@return bool isActive - true = selling, false = not selling (not active)
+	*@return bool isPunished - true if punished false otherwise
 	*/
-	function getDataSource(bytes32 _dataSourceName) public view returns(address,uint256,uint256,uint256,bool,bool);
+	function getDataProviderInfo(bytes32 _dataSourceName) public view returns(
+		address owner,
+		uint256 price,
+		uint256 volume,
+		uint256 subscriptionsNum,
+		bool isProvider,
+		bool isActive,
+		bool isPunished);
 	/*
 	@dev verify that a subscriber can access data source
 	@param _subscriber the subscriber to check
 	@param _dataSourceName the data source being checked 
-	@return bool true if valid, false otherwise
+	@return bool true if expired, false otherwise
 	*/
-	function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public returns (bool);
+	function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);
 
 	
 	/*********** Events ************/
