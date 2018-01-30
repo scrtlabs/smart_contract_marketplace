@@ -40,6 +40,13 @@ contract IMarketplace{
 	*/
 	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) public returns (bool);
 	/*
+	*@dev change the punishment status of a provider, defaults to false (not punished)
+	*@param _dataSourceName - the provider 
+	*@param _isPunished - true = punish , false = not punished
+	*@return bool - successful transaction 
+	*/
+	function setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);
+	/*
 	*@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)
 	*@param _subscriber the subscriber address
 	*@param _dataSourceName the name of the data source to check against

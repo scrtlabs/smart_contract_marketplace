@@ -70,7 +70,50 @@ contract Marketplace{ //is IMarketplace{
         mBegin = mProviders[0x0].name;
         mProvidersSize = 1;
 	}
-
+    function setPunishProvider(bytes32 _dataSourceName, bool _isPunished) 
+    public 
+    onlyOwner 
+    returns (bool success){
+        mProviders[_dataSourceName].isPunished = _isPunished;
+        return true;
+    }
+    function getWithdrawAmount(bytes32 _dataSourceName) 
+    public 
+    view 
+    returns(uint256 withdrawAmount){
+        require(mProviders[_dataSourceName].isProvider);
+        withdrawAmount = 0;
+        uint orderSize = mOrders[_dataSourceName].length;
+        for(uint i=0;i<orderSize;i++){
+            withdrawAmount = withdrawAmount.add(handleOrderWithdrawCalc(mOrders[_dataSourceName][i]));
+        }
+        return withdrawAmount;
+    }
+    function handleOrderWithdrawCalc(Order order) internal view returns(uint256 orderAmount){
+        orderAmount = 0;
+        if(!order.isPaid){ // if not paid yet 
+            if(isOrderExpired(order)){ // expired
+                if(mProviders[order.dataSourceName].isPunished){ // if punished
+                    if(mProviders[order.dataSourceName].punishTimeStamp >= order.endTime){ // punished after expiration date
+                        return order.price;
+                    }else{ // punished before expiration date
+                        return calcRelativeWithdraw(order); //(punishtime / endtime) * amount
+                    }
+                }else{ // not punished - return full amount
+                    return order.price;
+                }
+            }else{ // not expired
+                return orderAmount;
+            }
+        }
+        return orderAmount;
+    }
+    function calcRelativeWithdraw(Order order) internal view returns(uint256 relativeAmount){
+        return (SafeMath.div(mProviders[dorder.dataSourceName].punishTimeStamp,order.endTime)).mul(order.price);
+    }
+    function isOrderExpired(Order order) internal view returns (bool isExpired){
+        return order.endTime >= now;
+    }
     function register(bytes32 _dataSourceName, uint _price, address _dataOwner) 
     public
     uniqueDataName(_dataSourceName)
@@ -226,6 +269,10 @@ contract Marketplace{ //is IMarketplace{
     }
     modifier validPrice (uint256 _price){
         require(_price.add(1) > _price); //overflow
+        _;
+    }
+    modifier onlyOwner(){
+        require(msg.sender == mMarketPlaceOwner);
         _;
     }
     /* events - move to the interface later */
