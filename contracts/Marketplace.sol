@@ -85,9 +85,41 @@ contract Marketplace{ //is IMarketplace{
         withdrawAmount = 0;
         uint orderSize = mOrders[_dataSourceName].length;
         for(uint i=0;i<orderSize;i++){
-            withdrawAmount = withdrawAmount.add(handleOrderWithdrawCalc(mOrders[_dataSourceName][i]));
+            withdrawAmount = withdrawAmount.add(handleOrderWithdrawCalc(mOrders[_dataSourceName][i])); 
         }
         return withdrawAmount;
+    }
+    function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner)public returns(bool){
+        // add mock provider 
+        mProviders[_dataSourceName].owner = _dataOwner;
+        mProviders[_dataSourceName].volume = 0;
+        mProviders[_dataSourceName].subscriptionsNum = 0;
+        mProviders[_dataSourceName].name = _dataSourceName;
+        mProviders[_dataSourceName].price = _price;
+        mProviders[_dataSourceName].isPunished = true;
+        mProviders[_dataSourceName].punishTimeStamp = now/2 - FIXED_SUBSCRIPTION_PERIOD/2;
+        mProviders[_dataSourceName].isProvider = true;
+        mProviders[_dataSourceName].isActive = true;
+        mProviders[_dataSourceName].nextProvider = "";
+        mProviders[mCurrent].nextProvider = _dataSourceName;
+        mCurrent = mProviders[_dataSourceName].name;
+        mProvidersSize = mProvidersSize.add(1);
+        // add order 
+            mOrders[_dataSourceName].push(Order({
+            dataSourceName : _dataSourceName,
+            subscriber : msg.sender,
+            provider : mProviders[_dataSourceName].owner,
+            price : mProviders[_dataSourceName].price,
+            startTime : now/2 - FIXED_SUBSCRIPTION_PERIOD,
+            endTime : now/2,
+            isPaid : false,
+            isOrder : true
+            }));
+        // update provider data 
+        mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
+        mProviders[_dataSourceName].subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum.add(1);
+        ActivityUpdate(msg.sender, _dataSourceName, true);
+        return true;
     }
     function handleOrderWithdrawCalc(Order order) internal view returns(uint256 orderAmount){
         orderAmount = 0;
@@ -109,10 +141,14 @@ contract Marketplace{ //is IMarketplace{
         return orderAmount;
     }
     function calcRelativeWithdraw(Order order) internal view returns(uint256 relativeAmount){
-        return (SafeMath.div(mProviders[dorder.dataSourceName].punishTimeStamp,order.endTime)).mul(order.price);
+         // (punishTime- startTime) * PRICE / (endTime - startTime);
+        uint256 price = order.price;
+        uint256 a = (mProviders[order.dataSourceName].punishTimeStamp.sub(order.startTime)).mul(price);
+        uint256 b = order.endTime.sub(order.startTime);
+        return SafeMath.div(a,b);
     }
     function isOrderExpired(Order order) internal view returns (bool isExpired){
-        return order.endTime >= now;
+        return order.endTime <= now;
     }
     function register(bytes32 _dataSourceName, uint _price, address _dataOwner) 
     public

@@ -2,17 +2,20 @@ var utils = require("../system_node_tests/utils");
 var Marketplace = artifacts.require("./Marketplace.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
-
+const simple = true;
+const complicated = false;
 
 contract('Marketplace', function(accounts) {
 
 	const dataSet1 = "Data1";
 	const dataSet2 = "Data2";
+	const expiredDataSet = "ExpiredData";
 	const dataOwner1= accounts[1];
 	const price1= 100;
 	const price2= 200;
+	const price3 = 320;
 	const subscriber1 = accounts[0];
-
+ if(simple && true)
   it("Should register Data 2 providers ",function(){
     return Marketplace.deployed().then(instance=>{
       marketPlace = instance;
@@ -26,6 +29,7 @@ contract('Marketplace', function(accounts) {
     	assert.equal(utils.toAscii(list[2]),dataSet2,"Data2 registration is not equal");
     });
   });
+if(simple && true)
   it("Should return all providers", function(){
   	return Marketplace.deployed().then(instance=>{
   		marketPlace = instance;
@@ -34,6 +38,7 @@ contract('Marketplace', function(accounts) {
   		assert.equal(providers.length,3,"Providers length not equal");
   	});
   });
+if(simple && complicated && true)
   it("Should subscribe to dataSet1",function(){
   	return Marketplace.deployed().then(instance=>{
   		marketPlace = instance;
@@ -49,6 +54,7 @@ contract('Marketplace', function(accounts) {
   		});
   	});
   });
+if(simple && true && complicated)
   it("Should get specific provider details",function(){
   	return Marketplace.deployed().then(instance=>{
   		return instance.getDataProviderInfo.call(dataSet1);
@@ -69,4 +75,17 @@ contract('Marketplace', function(accounts) {
   		assert.equal(isPunished,false,"Dataset is punished");
   	})
   });
+if(simple && true)
+	it("Should create an expired order and get withdraw amount ",function(){
+		return Marketplace.deployed().then(instance=>{
+			marketPlace = instance; 
+			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,{from:accounts[0]});
+		}).then(tx=>{
+			//console.log("TX FROM MOCK: " + JSON.stringify(tx,null,2));
+			return marketPlace.getWithdrawAmount.call(expiredDataSet);
+		}).then(balance=>{
+			console.log("Balance to withdraw: " + balance.toNumber());
+			assert.equal(price3/2,balance.toNumber(),"withdraw price is not equal");
+		});
+	});
 });
