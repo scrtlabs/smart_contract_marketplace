@@ -5,6 +5,8 @@ var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 const simple = true;
 const complicated = true;
 const subscriptions = true;
+const mock = true;
+
 contract('Marketplace', function(accounts) {
 
 	const dataSet1 = "Data1";
@@ -79,23 +81,32 @@ if(simple && true && complicated)
   		assert.equal(isPunished,false,"Dataset is punished");
   	})
   });
-if(simple && subscriptions && true)
+if(simple && subscriptions && mock && true)
 	it("Should create an expired order and get withdraw amount ",function(){
 		return Marketplace.deployed().then(instance=>{
 			marketPlace = instance; 
-			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,true,{from:expiredSubscriber});
+			var punished = true;
+			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,punished,{from:expiredSubscriber});
 		}).then(tx=>{
 			return marketPlace.getWithdrawAmount.call(expiredDataSet);
 		}).then(balance=>{
 			assert.equal(price3/2,balance.toNumber(),"withdraw price is not equal");
 		});
 	});
-if(simple && subscriptions && true)
+if(simple && subscriptions && mock && true)
 	it("Should check if a subsbscription is expired",function(){
 		return Marketplace.deployed().then(insntace=>{
 			return insntace.isExpiredSubscription.call(expiredSubscriber,expiredDataSet);
 		}).then(bool=>{
 			assert.equal(true,bool,"Dataset is not expired");
 		})
+	});
+if(simple && subscriptions && mock && true)
+	it("Should get the refund amount of a subscriber ",function(){
+		return Marketplace.deployed().then(instance=>{
+			return instance.getRefundAmount(expiredSubscriber,expiredDataSet);
+		}).then(refundAmount=>{
+			assert(price3/2, refundAmount.toNumber(),"Refund amount dont match");
+		});
 	});
 });

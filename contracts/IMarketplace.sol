@@ -120,9 +120,12 @@ contract IMarketplace{
 	*/
 	function getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);
 	/*
-	*@dev 
+	*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)
+	*@param _susbcriber the subscriber address
+	*@param _dataSourceName the name of the data provider 
+	*@return refundAmount - total amount that can be refunded
 	*/
-	function getRefundAmount(address _susbcriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);
+	function getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);
 	/*********** Events ************/
 	
 	/*

@@ -129,7 +129,32 @@ contract Marketplace{ //is IMarketplace{
         ActivityUpdate(msg.sender, _dataSourceName, _isActive);
         success = true;
     }
-
+    function getRefundAmount(address _subscriber , bytes32 _dataSourceName) 
+    public 
+    view 
+    returns(uint256 refundAmount){
+        require(_subscriber != address(0));
+        require(mProviders[_dataSourceName].isProvider);
+        refundAmount = 0;
+        uint size = mOrders[_dataSourceName].length;
+        for(uint i=0; i< size ; i++){
+            if(mOrders[_dataSourceName][i].subscriber == _subscriber){
+                refundAmount = refundAmount.add(handleOrderRefundCalc(mOrders[_dataSourceName][i]));
+            }
+        }
+        return refundAmount;
+    }
+    function handleOrderRefundCalc(Order order) internal returns(uint256 refundAmount){
+        refundAmount = 0;
+        if(!order.isPaid){ //order not paid 
+            if(mProviders[order.dataSourceName].isPunished){
+                if(mProviders[order.dataSourceName].punishTimeStamp > order.startTime && mProviders[order.dataSourceName].punishTimeStamp < order.endTime){ // punished before the subscription is expired
+                   refundAmount = order.price.sub(calcRelativeWithdraw(order)); // price - withdrawPrice
+                }
+            }
+        }
+        return refundAmount;
+    }
     function withdrawProvider(bytes32 _dataSourceName) 
     public 
     onlyDataProvider(_dataSourceName) 
