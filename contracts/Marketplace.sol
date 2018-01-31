@@ -32,6 +32,7 @@ contract Marketplace is Ownable,IMarketplace{
         uint endTime;
         bool isPaid;
         bool isOrder;
+        bool isRefundPaid;
     }
     struct Provider{
         address owner;
@@ -105,7 +106,8 @@ contract Marketplace is Ownable,IMarketplace{
             startTime : now/2 - FIXED_SUBSCRIPTION_PERIOD,
             endTime : now/2,
             isPaid : false,
-            isOrder : true
+            isOrder : true,
+            isRefundPaid : false
             }));
         // update provider data 
         mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
@@ -139,6 +141,9 @@ contract Marketplace is Ownable,IMarketplace{
         for(uint i=0; i<size ;i++){
             if(mOrders[_dataSourceName][i].subscriber == msg.sender){
                 uint256 refund = handleOrderRefundCalc(mOrders[_dataSourceName][i]);
+                if(refund > 0){ // mark refund as paid
+                    mOrders[_dataSourceName][i].isRefundPaid = true;
+                }
                 refundAmount = refundAmount.add(refund);
             }
         }
@@ -233,7 +238,8 @@ contract Marketplace is Ownable,IMarketplace{
             startTime : now,
             endTime : now + FIXED_SUBSCRIPTION_PERIOD,
             isPaid : false,
-            isOrder : true
+            isOrder : true,
+            isRefundPaid : false
             }));
         // update provider data 
         mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
@@ -360,7 +366,7 @@ contract Marketplace is Ownable,IMarketplace{
     }
     function handleOrderRefundCalc(Order order) internal returns(uint256 refundAmount){
         refundAmount = 0;
-        if(!order.isPaid){ //order not paid 
+        if(!order.isRefundPaid){ //order not paid 
             if(mProviders[order.dataSourceName].isPunished){
                 if(mProviders[order.dataSourceName].punishTimeStamp > order.startTime && mProviders[order.dataSourceName].punishTimeStamp < order.endTime){ // punished before the subscription is expired
                    refundAmount = order.price.sub(calcRelativeWithdraw(order)); // price - withdrawPrice

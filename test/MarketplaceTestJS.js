@@ -6,7 +6,6 @@ const simple = true;
 const complicated = true;
 const subscriptions = true;
 const mock = true;
-
 contract('Marketplace', function(accounts) {
 
 	const dataSet1 = "Data1";
@@ -121,9 +120,36 @@ if(simple && subscriptions && mock && true)
 if(simple && subscriptions && mock && true)
 	it("Should withdraw providers tokens",function(){
 		return Marketplace.deployed().then(instance=>{
+			marketPlace = instance;
 			return instance.withdrawProvider(expiredDataSet,{from:dataOwner1});
 		}).then(tx=>{
-			console.log(JSON.stringify(tx,null,2));
+			return EnigmaToken.deployed().then(instance=>{
+				enigma = instance;
+				return enigma.balanceOf(dataOwner1);
+			}).then(balance=>{
+				assert.equal(price3/2,balance.toNumber(),"Balances are not equal after withdraw");
+				return marketPlace.getWithdrawAmount(expiredDataSet);
+			}).then(refund=>{
+				var left = 0;
+				assert.equal(refund.toNumber(),left,"The withdraw calculation is incorect.");
+			});
 		});
 	});
+ if(simple && subscriptions && mock && true)
+ 	it("Should refund a subscriber",function(){
+ 		return Marketplace.deployed().then(instance=>{
+ 			marketPlace = instance;
+ 			return marketPlace.refundSubscriber(expiredDataSet,{from:expiredSubscriber});
+ 		}).then(tx=>{
+ 			return marketPlace.getRefundAmount.call(expiredSubscriber,expiredDataSet);
+ 		}).then(refund=>{
+ 			assert.equal(refund.toNumber(),0,"Refund amount is not equal");
+ 			return EnigmaToken.deployed().then(instance=>{
+ 				return instance.balanceOf.call(expiredSubscriber);
+ 			}).then(balance=>{
+ 				var bal = 14999999999999160;
+ 				assert.equal(balance.toNumber(),bal,"Balance is not equal");
+ 			});
+ 		});
+ 	});
 });
