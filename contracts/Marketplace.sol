@@ -74,29 +74,21 @@ contract Marketplace{ //is IMarketplace{
     public 
     onlyOwner 
     returns (bool success){
-        mProviders[_dataSourceName].isPunished = _isPunished;
-        return true;
-    }
-    function getWithdrawAmount(bytes32 _dataSourceName) 
-    public 
-    view 
-    returns(uint256 withdrawAmount){
         require(mProviders[_dataSourceName].isProvider);
-        withdrawAmount = 0;
-        uint orderSize = mOrders[_dataSourceName].length;
-        for(uint i=0;i<orderSize;i++){
-            withdrawAmount = withdrawAmount.add(handleOrderWithdrawCalc(mOrders[_dataSourceName][i])); 
-        }
-        return withdrawAmount;
+        mProviders[_dataSourceName].isPunished = _isPunished;
+        ProviderPunishStatus(mProviders[_dataSourceName].owner,_dataSourceName,_isPunished);
+        success = true;
     }
-    function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner)public returns(bool){
+    // mock temp func
+    function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner, bool isPunished)
+    public returns(bool){
         // add mock provider 
         mProviders[_dataSourceName].owner = _dataOwner;
         mProviders[_dataSourceName].volume = 0;
         mProviders[_dataSourceName].subscriptionsNum = 0;
         mProviders[_dataSourceName].name = _dataSourceName;
         mProviders[_dataSourceName].price = _price;
-        mProviders[_dataSourceName].isPunished = true;
+        mProviders[_dataSourceName].isPunished = isPunished;
         mProviders[_dataSourceName].punishTimeStamp = now/2 - FIXED_SUBSCRIPTION_PERIOD/2;
         mProviders[_dataSourceName].isProvider = true;
         mProviders[_dataSourceName].isActive = true;
@@ -118,8 +110,56 @@ contract Marketplace{ //is IMarketplace{
         // update provider data 
         mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
         mProviders[_dataSourceName].subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum.add(1);
-        ActivityUpdate(msg.sender, _dataSourceName, true);
         return true;
+    }
+    function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) 
+    external 
+    onlyDataProvider(_dataSourceName)
+    validPrice(_newPrice)
+    returns (bool success){
+        mProviders[_dataSourceName].price = _newPrice;
+        PriceUpdate(msg.sender, _dataSourceName,_newPrice);
+        success = true;
+    }
+    function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) 
+    external 
+    onlyDataProvider(_dataSourceName) 
+    returns (bool success){
+        mProviders[_dataSourceName].isActive = _isActive;
+        ActivityUpdate(msg.sender, _dataSourceName, _isActive);
+        success = true;
+    }
+
+    function withdrawProvider(bytes32 _dataSourceName) 
+    public 
+    onlyDataProvider(_dataSourceName) 
+    returns (bool success){
+        // calculate the withdraw amount 
+        uint256 withdrawAmount = 0;
+        uint orderSize = mOrders[_dataSourceName].length;
+        for(uint i=0;i<orderSize;i++){
+            uint256 withdraw = handleOrderWithdrawCalc(mOrders[_dataSourceName][i]);
+            if(withdraw > 0){ // mark order as paid 
+                mOrders[_dataSourceName][i].isPaid = true;
+            }
+            withdrawAmount = withdrawAmount.add(withdraw); 
+        }
+        // transfer ENG's to the provider
+        require(safeToProviderTransfer(_dataSourceName,withdrawAmount)); // revert state if faild
+        ProviderWithdraw(mProviders[_dataSourceName].owner,_dataSourceName,withdrawAmount);
+        return true;
+    }
+    function getWithdrawAmount(bytes32 _dataSourceName) 
+    public 
+    view 
+    returns(uint256 withdrawAmount){
+        require(mProviders[_dataSourceName].isProvider);
+        withdrawAmount = 0;
+        uint orderSize = mOrders[_dataSourceName].length;
+        for(uint i=0;i<orderSize;i++){
+            withdrawAmount = withdrawAmount.add(handleOrderWithdrawCalc(mOrders[_dataSourceName][i])); 
+        }
+        return withdrawAmount;
     }
     function handleOrderWithdrawCalc(Order order) internal view returns(uint256 orderAmount){
         orderAmount = 0;
@@ -154,7 +194,7 @@ contract Marketplace{ //is IMarketplace{
     public
     uniqueDataName(_dataSourceName)
     validPrice(_price)
-    returns (bool){
+    returns (bool success){
         require(_dataOwner != address(0));
         mProviders[_dataSourceName].owner = _dataOwner;
         mProviders[_dataSourceName].volume = 0;
@@ -170,15 +210,14 @@ contract Marketplace{ //is IMarketplace{
         mCurrent = mProviders[_dataSourceName].name;
         mProvidersSize = mProvidersSize.add(1);
         Registered(_dataOwner,_dataSourceName,_price,true);
-        return true;
+        success =  true;
     }
 
     function subscribe(bytes32 _dataSourceName) 
     public 
     validDataProvider(_dataSourceName)
-    returns (bool){
-        bool success = safeToMarketPlaceTransfer(msg.sender,this,mProviders[_dataSourceName].price);
-        require(success);
+    returns (bool success){
+        require(safeToMarketPlaceTransfer(msg.sender,this,mProviders[_dataSourceName].price)); // revet state if failed
         // update order
         mOrders[_dataSourceName].push(Order({
             dataSourceName : _dataSourceName,
@@ -198,7 +237,7 @@ contract Marketplace{ //is IMarketplace{
             mProviders[_dataSourceName].owner,
             mProviders[_dataSourceName].price,
             true);
-        return true;
+        success = true;
     }
 
     function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) 
@@ -244,7 +283,15 @@ contract Marketplace{ //is IMarketplace{
          SubscriptionDeposited(_from, _to, _amount);
          return true;
     }
-
+    function safeToProviderTransfer(bytes32 _dataSourceName,uint256 _amount) 
+    internal 
+    onlyDataProvider(_dataSourceName) 
+    returns (bool){
+         require(mProviders[_dataSourceName].owner != address(0));
+         require(mToken.transfer(mProviders[_dataSourceName].owner,_amount));
+         TransferToProvider(mProviders[_dataSourceName].owner,_dataSourceName,_amount);
+         return true;
+     }
     function getAllProviders() public view returns (bytes32[]){
         bytes32[] memory names = new bytes32[](mProvidersSize);
         bytes32 iterator = mBegin;
@@ -284,13 +331,19 @@ contract Marketplace{ //is IMarketplace{
         bool isProvider,
         bool isActive,
         bool isPunished){
-        return (mProviders[_dataSourceName].owner,
-            mProviders[_dataSourceName].price,
-            mProviders[_dataSourceName].volume,
-            mProviders[_dataSourceName].subscriptionsNum,
-            mProviders[_dataSourceName].isProvider,
-            mProviders[_dataSourceName].isActive,
-            mProviders[_dataSourceName].isPunished);
+        owner = mProviders[_dataSourceName].owner;
+        price = mProviders[_dataSourceName].price;
+        volume = mProviders[_dataSourceName].volume;
+        subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum;
+        isProvider = mProviders[_dataSourceName].isProvider;
+        isActive = mProviders[_dataSourceName].isActive;
+        isPunished = mProviders[_dataSourceName].isPunished;
+    }
+    function getMarketplaceTotalBalance() public view returns (uint256 totalBalance){
+        return mToken.balanceOf(this);
+    }
+    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive){
+        isActive =  mProviders[_dataSourceName].isActive;
     }
     /* modifiers */
     modifier validDataProvider(bytes32 _dataSourceName){
@@ -311,6 +364,11 @@ contract Marketplace{ //is IMarketplace{
         require(msg.sender == mMarketPlaceOwner);
         _;
     }
+    modifier onlyDataProvider(bytes32 _dataSourceName){
+        require(mProviders[_dataSourceName].isProvider);
+        require(mProviders[_dataSourceName].owner == msg.sender);
+        _;
+    }
     /* events - move to the interface later */
     event Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);
 	event SubscriptionDeposited(address indexed from, address indexed to, uint256 value);
@@ -318,8 +376,10 @@ contract Marketplace{ //is IMarketplace{
 	event PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);
 	event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);
 	// new events 
-	// provifer got paid 
-	event TransferToProvider(address indexed dataOwner, bytes32 indexed _dataSourceName, uint256 _amount);
-	// provider finished withdraw process
-	event ProviderWithdraw(address indexed dataOwner, bytes32 indexed _dataSourceName, uint _amount);
+	// middle withdraw event -> means the provider got paid  
+	event TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);
+	// provider finished withdraw process and data update
+	event ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);
+    // provider punished status changed - only marketplace owner
+    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);
 }

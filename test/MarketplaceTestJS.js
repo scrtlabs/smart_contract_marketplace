@@ -3,8 +3,8 @@ var Marketplace = artifacts.require("./Marketplace.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
 const simple = true;
-const complicated = false;
-
+const complicated = true;
+const subscriptions = true;
 contract('Marketplace', function(accounts) {
 
 	const dataSet1 = "Data1";
@@ -15,6 +15,7 @@ contract('Marketplace', function(accounts) {
 	const price2= 200;
 	const price3 = 320;
 	const subscriber1 = accounts[0];
+	const expiredSubscriber = accounts[0];
  if(simple && true)
   it("Should register Data 2 providers ",function(){
     return Marketplace.deployed().then(instance=>{
@@ -51,6 +52,9 @@ if(simple && complicated && true)
   			return marketPlace.isExpiredSubscription.call(subscriber1,dataSet1);
   		}).then(bool=>{
   			assert.equal(bool,false,"Subscription is expired => not existing");
+  			return marketPlace.getMarketplaceTotalBalance.call();
+  		}).then(ContractBalance=>{
+  			assert.equal(ContractBalance.toNumber(),price1,"Contract balance is not equal");
   		});
   	});
   });
@@ -75,17 +79,23 @@ if(simple && true && complicated)
   		assert.equal(isPunished,false,"Dataset is punished");
   	})
   });
-if(simple && true)
+if(simple && subscriptions && true)
 	it("Should create an expired order and get withdraw amount ",function(){
 		return Marketplace.deployed().then(instance=>{
 			marketPlace = instance; 
-			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,{from:accounts[0]});
+			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,true,{from:expiredSubscriber});
 		}).then(tx=>{
-			//console.log("TX FROM MOCK: " + JSON.stringify(tx,null,2));
 			return marketPlace.getWithdrawAmount.call(expiredDataSet);
 		}).then(balance=>{
-			console.log("Balance to withdraw: " + balance.toNumber());
 			assert.equal(price3/2,balance.toNumber(),"withdraw price is not equal");
 		});
+	});
+if(simple && subscriptions && true)
+	it("Should check if a subsbscription is expired",function(){
+		return Marketplace.deployed().then(insntace=>{
+			return insntace.isExpiredSubscription.call(expiredSubscriber,expiredDataSet);
+		}).then(bool=>{
+			assert.equal(true,bool,"Dataset is not expired");
+		})
 	});
 });

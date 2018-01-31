@@ -11,26 +11,26 @@ contract IMarketplace{
 	*@param _newPrice the new price
 	*@return true if updated;
 	*/
-	function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool);
+	function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool success);
 	/*
 	*@dev the ability to turn off/on a data set for FUTURE sales. Default on subscriotion is TRUE.
 	*@param _datasourceName the name of the data source.
-	*@param stats true = sellable , false = not sellable 
+	*@param _isActive true = sellable , false = not sellable 
 	*@return true if success.
 	*/
-	function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool status) external returns (bool);
+	function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) external returns (bool success);
 	/*
 	*@dev data providers can decide to turn off/on their offer for future requests.
 	*@param _dataSourceName the data source in context
 	*@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)
 	*/
-	function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool);
+	function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive);
 	/*
 	*@dev used by users who would like to use and pay a data provider. 
 	*@param _dataSourceName chosen data source name.
 	*@return bool true of successful. 
 	*/
-	function subscribe(bytes32 _dataSourceName) public returns (bool);
+	function subscribe(bytes32 _dataSourceName) public returns (bool success);
 	/*
 	*@dev for data providers to list their data set. 
 	*@param _dataSourceName the unique name that will be used for listing the data set
@@ -38,7 +38,7 @@ contract IMarketplace{
 	*@paran _dataOwner the account that will get paid and owns the data.
 	*@return true if success.
 	*/
-	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) public returns (bool);
+	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) public returns (bool success);
 	/*
 	*@dev change the punishment status of a provider, defaults to false (not punished)
 	*@param _dataSourceName - the provider 
@@ -101,8 +101,28 @@ contract IMarketplace{
 	@return bool true if expired, false otherwise
 	*/
 	function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);
-
-	
+	/*
+	*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request 
+	*@return uint256 total balance in ENG tokens  
+	*/
+	function getMarketplaceCurrentBalance() public view returns (uint256 totalBalance);
+	/*
+	*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.
+	*transfering to the owner registred wallet. can be activated only with the owners wallet.
+	*@param _dataSourceName - the name of the data source 
+	*@return bool success - true if transferd false otherwise
+	*/
+	function withdrawProvider(bytes32 _dataSourceName) public returns (bool success);
+	/*
+	@dev get the withdraw amount of a provider (not transfering)
+	@param _dataSourceName - the name of the data source 
+	@return withdrawAmount - total amount that can be withdrawed
+	*/
+	function getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);
+	/*
+	*@dev 
+	*/
+	function getRefundAmount(address _susbcriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);
 	/*********** Events ************/
 	
 	/*
