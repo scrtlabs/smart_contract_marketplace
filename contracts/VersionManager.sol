@@ -40,9 +40,9 @@
 // }
 
 
-// This approach avoids the previous problems but has problems of its own. You must be extremely careful with how you store data in this contract. If your new contract has a different storage layout than the first, your data may end up corrupted. Additionally, this simple version of the pattern cannot return values from functions, only forward them, which limits its applicability. (More complex implementations attempt to solve this with in-line assembly code and a registry of return sizes.)
+// // This approach avoids the previous problems but has problems of its own. You must be extremely careful with how you store data in this contract. If your new contract has a different storage layout than the first, your data may end up corrupted. Additionally, this simple version of the pattern cannot return values from functions, only forward them, which limits its applicability. (More complex implementations attempt to solve this with in-line assembly code and a registry of return sizes.)
 
-// Regardless of your approach, it is important to have some way to upgrade your contracts, or they will become unusable when the inevitable bugs are discovered in them.
+// // Regardless of your approach, it is important to have some way to upgrade your contracts, or they will become unusable when the inevitable bugs are discovered in them.
 
 
 // contract Relay {

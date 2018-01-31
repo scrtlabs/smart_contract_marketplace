@@ -181,6 +181,25 @@
         {
           "name": "_dataSourceName",
           "type": "bytes32"
+        }
+      ],
+      "name": "refundSubscriber",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_dataSourceName",
+          "type": "bytes32"
         },
         {
           "name": "_price",
@@ -554,20 +573,42 @@
       ],
       "name": "ProviderPunishStatus",
       "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "subscriber",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "dataSourceName",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "name": "refundAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "SubscriberRefund",
+      "type": "event"
     }
   ],
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IMarketplace{\n\t/*\n\t*@dev if data set owner wants to update the price for FUTURE users.\n\t*@param _dataSourceName name of the data source\n\t*@param _newPrice the new price\n\t*@return true if updated;\n\t*/\n\tfunction updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool success);\n\t/*\n\t*@dev the ability to turn off/on a data set for FUTURE sales. Default on subscriotion is TRUE.\n\t*@param _datasourceName the name of the data source.\n\t*@param _isActive true = sellable , false = not sellable \n\t*@return true if success.\n\t*/\n\tfunction changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) external returns (bool success);\n\t/*\n\t*@dev data providers can decide to turn off/on their offer for future requests.\n\t*@param _dataSourceName the data source in context\n\t*@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)\n\t*/\n\tfunction isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive);\n\t/*\n\t*@dev used by users who would like to use and pay a data provider. \n\t*@param _dataSourceName chosen data source name.\n\t*@return bool true of successful. \n\t*/\n\tfunction subscribe(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t*@dev for data providers to list their data set. \n\t*@param _dataSourceName the unique name that will be used for listing the data set\n\t*@param _price the subscription price \n\t*@paran _dataOwner the account that will get paid and owns the data.\n\t*@return true if success.\n\t*/\n\tfunction register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);\n\t/*\n\t*@dev change the punishment status of a provider, defaults to false (not punished)\n\t*@param _dataSourceName - the provider \n\t*@param _isPunished - true = punish , false = not punished\n\t*@return bool - successful transaction \n\t*/\n\tfunction setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);\n\t/*\n\t*@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)\n\t*@param _subscriber the subscriber address\n\t*@param _dataSourceName the name of the data source to check against\n\t*@return address - the subscriber address (double verification)\n\t*@return bytes32 - the data set name (double verification)\n\t*@return uint - subscription price\n\t*@return uint - subscription start time\n\t*@return uint - subscription end time\n\t*@return bool - is subscription expired, true = expired, false = not expired\n\t*@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) \n    *@return bool - isPunishedProvider , is the provider of the subscription punished\n    *@return bool - isOrder , true if the order exists, false otherwise\n\t*/\n\tfunction checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view \n\treturns (address subscriber,\n        bytes32 dataSourceName,\n        uint price,\n        uint startTime,\n        uint endTime,\n        bool isExpired,\n        bool isPaid, \n        bool isPunishedProvider,\n        bool isOrder);\n\t/*\n\t*@dev get the address of the owner given a data source name. \n\t*@param _dataSourceName the name of the data source\n\t*@return address the owner address\n\t*/\n\tfunction getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner);\n\t/*\n\t*@dev get information regarding some data source given a name.\n\t*@param _dataSourceName the data source name\n\t*@return address owner - data source owner\n\t*@return uint256 price - the current price of the data set \n\t*@return uint256 volume - the total sum of the tokens paid since registration.\n\t*@return uint256 - total counter of the subscriptions number to that data source\n\t*@return bool isProvider - should always be true if registry exists\n\t*@return bool isActive - true = selling, false = not selling (not active)\n\t*@return bool isPunished - true if punished false otherwise\n\t*/\n\tfunction getDataProviderInfo(bytes32 _dataSourceName) public view returns(\n\t\taddress owner,\n\t\tuint256 price,\n\t\tuint256 volume,\n\t\tuint256 subscriptionsNum,\n\t\tbool isProvider,\n\t\tbool isActive,\n\t\tbool isPunished);\n\t/*\n\t@dev verify that a subscriber can access data source\n\t@param _subscriber the subscriber to check\n\t@param _dataSourceName the data source being checked \n\t@return bool true if expired, false otherwise\n\t*/\n\tfunction isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);\n\t/*\n\t*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request \n\t*@return uint256 total balance in ENG tokens  \n\t*/\n\tfunction getMarketplaceTotalBalance() public view returns (uint256 totalBalance);\n\t/*\n\t*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\n\t*transfering to the owner registred wallet. can be activated only with the owners wallet.\n\t*@param _dataSourceName - the name of the data source \n\t*@return bool success - true if transferd false otherwise\n\t*/\n\tfunction withdrawProvider(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t@dev get the withdraw amount of a provider (not transfering)\n\t@param _dataSourceName - the name of the data source \n\t@return withdrawAmount - total amount that can be withdrawed\n\t*/\n\tfunction getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);\n\t/*\n\t*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)\n\t*@param _susbcriber the subscriber address\n\t*@param _dataSourceName the name of the data provider \n\t*@return refundAmount - total amount that can be refunded\n\t*/\n\tfunction getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);\n\t/*\n\t*@dev get all the providers names \n\t*@param bytes32[] array of all time providers \n\t*/\n\tfunction getAllProviders() public view returns (bytes32[]);\n\t/*********** Events ************/\n\t\n\t/*\n\t*@dev When data provider finishes registration in the contract\n\t*@param dataOwner the owner of the data\n\t*@param dataSourceName the new name registred\n\t*@param price the price for subscription\n\t*@param true if registred successfully\n\t*/\n\tevent Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);\n\t/*\n\t*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\n\t*@param from who paid\n\t*@param to the data source owner\n\t*@param value the value that was transfered\n\t*/\n\tevent SubscriptionDeposited(address indexed from, address indexed to, uint256 value);\n\t/*\n\t*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\n\t*@param subscriber who subscribed\n\t*@param dataSourceName the data source name\n\t*@param dataOwner the owner of the data source\n\t*@param price the price paid for subscription\n\t*@param success true if subscribed successfully\n\t*/\n\tevent Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);\n\t/*\n\t*@dev triggerd uppon a price change of an existing data source\n\t@param editor the owner that changed the price\n\t@param dataSourceName the data source that has changed\n\t@param newPrice the new price.\n\t*/\n\tevent PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);\n\t/*\n\t*@dev triggerd upon a change in the state of a data source availablity.\n\t@param editor who changed the activity state\n\t@param dataSourceName which dataSource changed. \n\t@param newStatus true = active, false = not active (cannot be sold)\n\t*/\n\tevent ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);\n\t/*\n\t*@dev triggerd upon a token transfer to provider (before finishing state update)\n\t*@param dataOwner - the owner that got paid \n\t*@param dataSourceName - the name of the data source\n\t*@param amount - the amount transferd from the marketplace contract to the provider\n\t*/\n\tevent TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);\n\t/*\n\t*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\n\t*@param dataOwner - the owner that withdrawed\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount withdrawed\n\t*/\n\tevent ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);\n    /*\n\t*@dev triggerd when punishment status changed (true = punished, false = not punished)\n\t*@param dataOwner - the provider \n\t*@param dataSourceName - the name of the data source \n\t*@param isPunished - the status current status AFTER the change\n    */\n    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);\n}",
+  "source": "pragma solidity ^0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IMarketplace{\n\t/*\n\t*@dev if data set owner wants to update the price for FUTURE users.\n\t*@param _dataSourceName name of the data source\n\t*@param _newPrice the new price\n\t*@return true if updated;\n\t*/\n\tfunction updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool success);\n\t/*\n\t*@dev the ability to turn off/on a data set for FUTURE sales. Default on subscriotion is TRUE.\n\t*@param _datasourceName the name of the data source.\n\t*@param _isActive true = sellable , false = not sellable \n\t*@return true if success.\n\t*/\n\tfunction changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) external returns (bool success);\n\t/*\n\t*@dev data providers can decide to turn off/on their offer for future requests.\n\t*@param _dataSourceName the data source in context\n\t*@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)\n\t*/\n\tfunction isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive);\n\t/*\n\t*@dev used by users who would like to use and pay a data provider. \n\t*@param _dataSourceName chosen data source name.\n\t*@return bool true of successful. \n\t*/\n\tfunction subscribe(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t*@dev for data providers to list their data set. \n\t*@param _dataSourceName the unique name that will be used for listing the data set\n\t*@param _price the subscription price \n\t*@paran _dataOwner the account that will get paid and owns the data.\n\t*@return true if success.\n\t*/\n\tfunction register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);\n\t/*\n\t*@dev change the punishment status of a provider, defaults to false (not punished)\n\t*@param _dataSourceName - the provider \n\t*@param _isPunished - true = punish , false = not punished\n\t*@return bool - successful transaction \n\t*/\n\tfunction setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);\n\t/*\n\t*@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)\n\t*@param _subscriber the subscriber address\n\t*@param _dataSourceName the name of the data source to check against\n\t*@return address - the subscriber address (double verification)\n\t*@return bytes32 - the data set name (double verification)\n\t*@return uint - subscription price\n\t*@return uint - subscription start time\n\t*@return uint - subscription end time\n\t*@return bool - is subscription expired, true = expired, false = not expired\n\t*@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) \n    *@return bool - isPunishedProvider , is the provider of the subscription punished\n    *@return bool - isOrder , true if the order exists, false otherwise\n\t*/\n\tfunction checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view \n\treturns (address subscriber,\n        bytes32 dataSourceName,\n        uint price,\n        uint startTime,\n        uint endTime,\n        bool isExpired,\n        bool isPaid, \n        bool isPunishedProvider,\n        bool isOrder);\n\t/*\n\t*@dev get the address of the owner given a data source name. \n\t*@param _dataSourceName the name of the data source\n\t*@return address the owner address\n\t*/\n\tfunction getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner);\n\t/*\n\t*@dev get information regarding some data source given a name.\n\t*@param _dataSourceName the data source name\n\t*@return address owner - data source owner\n\t*@return uint256 price - the current price of the data set \n\t*@return uint256 volume - the total sum of the tokens paid since registration.\n\t*@return uint256 - total counter of the subscriptions number to that data source\n\t*@return bool isProvider - should always be true if registry exists\n\t*@return bool isActive - true = selling, false = not selling (not active)\n\t*@return bool isPunished - true if punished false otherwise\n\t*/\n\tfunction getDataProviderInfo(bytes32 _dataSourceName) public view returns(\n\t\taddress owner,\n\t\tuint256 price,\n\t\tuint256 volume,\n\t\tuint256 subscriptionsNum,\n\t\tbool isProvider,\n\t\tbool isActive,\n\t\tbool isPunished);\n\t/*\n\t@dev verify that a subscriber can access data source\n\t@param _subscriber the subscriber to check\n\t@param _dataSourceName the data source being checked \n\t@return bool true if expired, false otherwise\n\t*/\n\tfunction isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);\n\t/*\n\t*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request \n\t*@return uint256 total balance in ENG tokens  \n\t*/\n\tfunction getMarketplaceTotalBalance() public view returns (uint256 totalBalance);\n\t/*\n\t*@dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)\n\t*@param _dataSourceName - the data source name \n\t*@return success - true if happend false otherwise.\n\t*/\n\tfunction refundSubscriber(bytes32 _dataSourceName) public returns(bool success);\n\t/*\n\t*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\n\t*transfering to the owner registred wallet. can be activated only with the owners wallet.\n\t*@param _dataSourceName - the name of the data source \n\t*@return bool success - true if transferd false otherwise\n\t*/\n\tfunction withdrawProvider(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t@dev get the withdraw amount of a provider (not transfering)\n\t@param _dataSourceName - the name of the data source \n\t@return withdrawAmount - total amount that can be withdrawed\n\t*/\n\tfunction getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);\n\t/*\n\t*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)\n\t*@param _susbcriber the subscriber address\n\t*@param _dataSourceName the name of the data provider \n\t*@return refundAmount - total amount that can be refunded\n\t*/\n\tfunction getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);\n\t/*\n\t*@dev get all the providers names \n\t*@param bytes32[] array of all time providers \n\t*/\n\tfunction getAllProviders() public view returns (bytes32[]);\n\t/*********** Events ************/\n\t\n\t/*\n\t*@dev When data provider finishes registration in the contract\n\t*@param dataOwner the owner of the data\n\t*@param dataSourceName the new name registred\n\t*@param price the price for subscription\n\t*@param true if registred successfully\n\t*/\n\tevent Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);\n\t/*\n\t*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\n\t*@param from who paid\n\t*@param to the data source owner\n\t*@param value the value that was transfered\n\t*/\n\tevent SubscriptionDeposited(address indexed from, address indexed to, uint256 value);\n\t/*\n\t*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\n\t*@param subscriber who subscribed\n\t*@param dataSourceName the data source name\n\t*@param dataOwner the owner of the data source\n\t*@param price the price paid for subscription\n\t*@param success true if subscribed successfully\n\t*/\n\tevent Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);\n\t/*\n\t*@dev triggerd uppon a price change of an existing data source\n\t@param editor the owner that changed the price\n\t@param dataSourceName the data source that has changed\n\t@param newPrice the new price.\n\t*/\n\tevent PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);\n\t/*\n\t*@dev triggerd upon a change in the state of a data source availablity.\n\t@param editor who changed the activity state\n\t@param dataSourceName which dataSource changed. \n\t@param newStatus true = active, false = not active (cannot be sold)\n\t*/\n\tevent ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);\n\t/*\n\t*@dev triggerd upon a token transfer to provider (before finishing state update)\n\t*@param dataOwner - the owner that got paid \n\t*@param dataSourceName - the name of the data source\n\t*@param amount - the amount transferd from the marketplace contract to the provider\n\t*/\n\tevent TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);\n\t/*\n\t*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\n\t*@param dataOwner - the owner that withdrawed\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount withdrawed\n\t*/\n\tevent ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);\n    /*\n\t*@dev triggerd when punishment status changed (true = punished, false = not punished)\n\t*@param dataOwner - the provider \n\t*@param dataSourceName - the name of the data source \n\t*@param isPunished - the status current status AFTER the change\n    */\n    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);\n\t/*\n\t*@dev triggerd when the subscriber got a refund (punished provider)\n\t*@param subscriber - the refunded address\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount of the refund\n\t*/\n    event SubscriberRefund(address indexed subscriber,bytes32 indexed dataSourceName, uint256 refundAmount);\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IMarketplace.sol",
   "ast": {
     "attributes": {
       "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IMarketplace.sol",
       "exportedSymbols": {
         "IMarketplace": [
-          219
+          234
         ]
       }
     },
@@ -597,10 +638,10 @@
           "documentation": null,
           "fullyImplemented": false,
           "linearizedBaseContracts": [
-            219
+            234
           ],
           "name": "IMarketplace",
-          "scope": 220
+          "scope": 235
         },
         "children": [
           {
@@ -614,7 +655,7 @@
               ],
               "name": "updateDataSourcePrice",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "external"
@@ -728,7 +769,7 @@
               ],
               "name": "changeDataSourceActivityStatus",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "external"
@@ -842,7 +883,7 @@
               ],
               "name": "isActiveDataSource",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "external"
@@ -930,7 +971,7 @@
               ],
               "name": "subscribe",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -1018,7 +1059,7 @@
               ],
               "name": "register",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -1158,7 +1199,7 @@
               ],
               "name": "setPunishProvider",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -1272,7 +1313,7 @@
               ],
               "name": "checkAddressSubscription",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -1594,7 +1635,7 @@
               ],
               "name": "getOwnerFromName",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -1682,7 +1723,7 @@
               ],
               "name": "getDataProviderInfo",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -1926,7 +1967,7 @@
               ],
               "name": "isExpiredSubscription",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -2040,7 +2081,7 @@
               ],
               "name": "getMarketplaceTotalBalance",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -2104,9 +2145,9 @@
               "modifiers": [
                 null
               ],
-              "name": "withdrawProvider",
+              "name": "refundSubscriber",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -2133,17 +2174,17 @@
                         },
                         "id": 120,
                         "name": "ElementaryTypeName",
-                        "src": "5158:7:1"
+                        "src": "5058:7:1"
                       }
                     ],
                     "id": 121,
                     "name": "VariableDeclaration",
-                    "src": "5158:23:1"
+                    "src": "5058:23:1"
                   }
                 ],
                 "id": 122,
                 "name": "ParameterList",
-                "src": "5157:25:1"
+                "src": "5057:25:1"
               },
               {
                 "children": [
@@ -2166,36 +2207,36 @@
                         },
                         "id": 123,
                         "name": "ElementaryTypeName",
-                        "src": "5199:4:1"
+                        "src": "5098:4:1"
                       }
                     ],
                     "id": 124,
                     "name": "VariableDeclaration",
-                    "src": "5199:12:1"
+                    "src": "5098:12:1"
                   }
                 ],
                 "id": 125,
                 "name": "ParameterList",
-                "src": "5198:14:1"
+                "src": "5097:14:1"
               }
             ],
             "id": 126,
             "name": "FunctionDefinition",
-            "src": "5132:81:1"
+            "src": "5032:80:1"
           },
           {
             "attributes": {
               "body": null,
-              "constant": true,
+              "constant": false,
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
                 null
               ],
-              "name": "getWithdrawAmount",
+              "name": "withdrawProvider",
               "payable": false,
-              "scope": 219,
-              "stateMutability": "view",
+              "scope": 234,
+              "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
             },
@@ -2221,55 +2262,55 @@
                         },
                         "id": 127,
                         "name": "ElementaryTypeName",
-                        "src": "5429:7:1"
+                        "src": "5443:7:1"
                       }
                     ],
                     "id": 128,
                     "name": "VariableDeclaration",
-                    "src": "5429:23:1"
+                    "src": "5443:23:1"
                   }
                 ],
                 "id": 129,
                 "name": "ParameterList",
-                "src": "5428:25:1"
+                "src": "5442:25:1"
               },
               {
                 "children": [
                   {
                     "attributes": {
                       "constant": false,
-                      "name": "withdrawAmount",
+                      "name": "success",
                       "scope": 133,
                       "stateVariable": false,
                       "storageLocation": "default",
-                      "type": "uint256",
+                      "type": "bool",
                       "value": null,
                       "visibility": "internal"
                     },
                     "children": [
                       {
                         "attributes": {
-                          "name": "uint256",
-                          "type": "uint256"
+                          "name": "bool",
+                          "type": "bool"
                         },
                         "id": 130,
                         "name": "ElementaryTypeName",
-                        "src": "5474:7:1"
+                        "src": "5484:4:1"
                       }
                     ],
                     "id": 131,
                     "name": "VariableDeclaration",
-                    "src": "5474:22:1"
+                    "src": "5484:12:1"
                   }
                 ],
                 "id": 132,
                 "name": "ParameterList",
-                "src": "5473:24:1"
+                "src": "5483:14:1"
               }
             ],
             "id": 133,
             "name": "FunctionDefinition",
-            "src": "5402:96:1"
+            "src": "5417:81:1"
           },
           {
             "attributes": {
@@ -2280,9 +2321,9 @@
               "modifiers": [
                 null
               ],
-              "name": "getRefundAmount",
+              "name": "getWithdrawAmount",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -2293,34 +2334,8 @@
                   {
                     "attributes": {
                       "constant": false,
-                      "name": "_subscriber",
-                      "scope": 142,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "address",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "address",
-                          "type": "address"
-                        },
-                        "id": 134,
-                        "name": "ElementaryTypeName",
-                        "src": "5788:7:1"
-                      }
-                    ],
-                    "id": 135,
-                    "name": "VariableDeclaration",
-                    "src": "5788:19:1"
-                  },
-                  {
-                    "attributes": {
-                      "constant": false,
                       "name": "_dataSourceName",
-                      "scope": 142,
+                      "scope": 140,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -2333,27 +2348,27 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 136,
+                        "id": 134,
                         "name": "ElementaryTypeName",
-                        "src": "5810:7:1"
+                        "src": "5714:7:1"
                       }
                     ],
-                    "id": 137,
+                    "id": 135,
                     "name": "VariableDeclaration",
-                    "src": "5810:23:1"
+                    "src": "5714:23:1"
                   }
                 ],
-                "id": 138,
+                "id": 136,
                 "name": "ParameterList",
-                "src": "5787:47:1"
+                "src": "5713:25:1"
               },
               {
                 "children": [
                   {
                     "attributes": {
                       "constant": false,
-                      "name": "refundAmount",
-                      "scope": 142,
+                      "name": "withdrawAmount",
+                      "scope": 140,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -2366,24 +2381,138 @@
                           "name": "uint256",
                           "type": "uint256"
                         },
-                        "id": 139,
+                        "id": 137,
                         "name": "ElementaryTypeName",
-                        "src": "5855:7:1"
+                        "src": "5759:7:1"
                       }
                     ],
-                    "id": 140,
+                    "id": 138,
                     "name": "VariableDeclaration",
-                    "src": "5855:20:1"
+                    "src": "5759:22:1"
                   }
                 ],
-                "id": 141,
+                "id": 139,
                 "name": "ParameterList",
-                "src": "5854:22:1"
+                "src": "5758:24:1"
               }
             ],
-            "id": 142,
+            "id": 140,
             "name": "FunctionDefinition",
-            "src": "5763:114:1"
+            "src": "5687:96:1"
+          },
+          {
+            "attributes": {
+              "body": null,
+              "constant": true,
+              "implemented": false,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "getRefundAmount",
+              "payable": false,
+              "scope": 234,
+              "stateMutability": "view",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_subscriber",
+                      "scope": 149,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 141,
+                        "name": "ElementaryTypeName",
+                        "src": "6073:7:1"
+                      }
+                    ],
+                    "id": 142,
+                    "name": "VariableDeclaration",
+                    "src": "6073:19:1"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_dataSourceName",
+                      "scope": 149,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bytes32",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes32",
+                          "type": "bytes32"
+                        },
+                        "id": 143,
+                        "name": "ElementaryTypeName",
+                        "src": "6095:7:1"
+                      }
+                    ],
+                    "id": 144,
+                    "name": "VariableDeclaration",
+                    "src": "6095:23:1"
+                  }
+                ],
+                "id": 145,
+                "name": "ParameterList",
+                "src": "6072:47:1"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "refundAmount",
+                      "scope": 149,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 146,
+                        "name": "ElementaryTypeName",
+                        "src": "6140:7:1"
+                      }
+                    ],
+                    "id": 147,
+                    "name": "VariableDeclaration",
+                    "src": "6140:20:1"
+                  }
+                ],
+                "id": 148,
+                "name": "ParameterList",
+                "src": "6139:22:1"
+              }
+            ],
+            "id": 149,
+            "name": "FunctionDefinition",
+            "src": "6048:114:1"
           },
           {
             "attributes": {
@@ -2396,7 +2525,7 @@
               ],
               "name": "getAllProviders",
               "payable": false,
-              "scope": 219,
+              "scope": 234,
               "stateMutability": "view",
               "superFunction": null,
               "visibility": "public"
@@ -2409,9 +2538,9 @@
                   ]
                 },
                 "children": [],
-                "id": 143,
+                "id": 150,
                 "name": "ParameterList",
-                "src": "5995:2:1"
+                "src": "6280:2:1"
               },
               {
                 "children": [
@@ -2419,7 +2548,7 @@
                     "attributes": {
                       "constant": false,
                       "name": "",
-                      "scope": 148,
+                      "scope": 155,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32[] memory",
@@ -2438,29 +2567,29 @@
                               "name": "bytes32",
                               "type": "bytes32"
                             },
-                            "id": 144,
+                            "id": 151,
                             "name": "ElementaryTypeName",
-                            "src": "6019:7:1"
+                            "src": "6304:7:1"
                           }
                         ],
-                        "id": 145,
+                        "id": 152,
                         "name": "ArrayTypeName",
-                        "src": "6019:9:1"
+                        "src": "6304:9:1"
                       }
                     ],
-                    "id": 146,
+                    "id": 153,
                     "name": "VariableDeclaration",
-                    "src": "6019:9:1"
+                    "src": "6304:9:1"
                   }
                 ],
-                "id": 147,
+                "id": 154,
                 "name": "ParameterList",
-                "src": "6018:11:1"
+                "src": "6303:11:1"
               }
             ],
-            "id": 148,
+            "id": 155,
             "name": "FunctionDefinition",
-            "src": "5971:59:1"
+            "src": "6256:59:1"
           },
           {
             "attributes": {
@@ -2475,7 +2604,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "dataOwner",
-                      "scope": 158,
+                      "scope": 165,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2488,21 +2617,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 149,
+                        "id": 156,
                         "name": "ElementaryTypeName",
-                        "src": "6328:7:1"
+                        "src": "6613:7:1"
                       }
                     ],
-                    "id": 150,
+                    "id": 157,
                     "name": "VariableDeclaration",
-                    "src": "6328:25:1"
+                    "src": "6613:25:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 158,
+                      "scope": 165,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -2515,21 +2644,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 151,
+                        "id": 158,
                         "name": "ElementaryTypeName",
-                        "src": "6355:7:1"
+                        "src": "6640:7:1"
                       }
                     ],
-                    "id": 152,
+                    "id": 159,
                     "name": "VariableDeclaration",
-                    "src": "6355:30:1"
+                    "src": "6640:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "price",
-                      "scope": 158,
+                      "scope": 165,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -2542,21 +2671,21 @@
                           "name": "uint",
                           "type": "uint256"
                         },
-                        "id": 153,
+                        "id": 160,
                         "name": "ElementaryTypeName",
-                        "src": "6387:4:1"
+                        "src": "6672:4:1"
                       }
                     ],
-                    "id": 154,
+                    "id": 161,
                     "name": "VariableDeclaration",
-                    "src": "6387:10:1"
+                    "src": "6672:10:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "success",
-                      "scope": 158,
+                      "scope": 165,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bool",
@@ -2569,24 +2698,24 @@
                           "name": "bool",
                           "type": "bool"
                         },
-                        "id": 155,
+                        "id": 162,
                         "name": "ElementaryTypeName",
-                        "src": "6399:4:1"
+                        "src": "6684:4:1"
                       }
                     ],
-                    "id": 156,
+                    "id": 163,
                     "name": "VariableDeclaration",
-                    "src": "6399:12:1"
+                    "src": "6684:12:1"
                   }
                 ],
-                "id": 157,
+                "id": 164,
                 "name": "ParameterList",
-                "src": "6327:85:1"
+                "src": "6612:85:1"
               }
             ],
-            "id": 158,
+            "id": 165,
             "name": "EventDefinition",
-            "src": "6311:102:1"
+            "src": "6596:102:1"
           },
           {
             "attributes": {
@@ -2601,7 +2730,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "from",
-                      "scope": 166,
+                      "scope": 173,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2614,21 +2743,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 159,
+                        "id": 166,
                         "name": "ElementaryTypeName",
-                        "src": "6690:7:1"
+                        "src": "6975:7:1"
                       }
                     ],
-                    "id": 160,
+                    "id": 167,
                     "name": "VariableDeclaration",
-                    "src": "6690:20:1"
+                    "src": "6975:20:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "to",
-                      "scope": 166,
+                      "scope": 173,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2641,21 +2770,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 161,
+                        "id": 168,
                         "name": "ElementaryTypeName",
-                        "src": "6712:7:1"
+                        "src": "6997:7:1"
                       }
                     ],
-                    "id": 162,
+                    "id": 169,
                     "name": "VariableDeclaration",
-                    "src": "6712:18:1"
+                    "src": "6997:18:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "value",
-                      "scope": 166,
+                      "scope": 173,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -2668,24 +2797,24 @@
                           "name": "uint256",
                           "type": "uint256"
                         },
-                        "id": 163,
+                        "id": 170,
                         "name": "ElementaryTypeName",
-                        "src": "6732:7:1"
+                        "src": "7017:7:1"
                       }
                     ],
-                    "id": 164,
+                    "id": 171,
                     "name": "VariableDeclaration",
-                    "src": "6732:13:1"
+                    "src": "7017:13:1"
                   }
                 ],
-                "id": 165,
+                "id": 172,
                 "name": "ParameterList",
-                "src": "6689:57:1"
+                "src": "6974:57:1"
               }
             ],
-            "id": 166,
+            "id": 173,
             "name": "EventDefinition",
-            "src": "6662:85:1"
+            "src": "6947:85:1"
           },
           {
             "attributes": {
@@ -2700,7 +2829,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "subscriber",
-                      "scope": 178,
+                      "scope": 185,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2713,21 +2842,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 167,
+                        "id": 174,
                         "name": "ElementaryTypeName",
-                        "src": "7101:7:1"
+                        "src": "7386:7:1"
                       }
                     ],
-                    "id": 168,
+                    "id": 175,
                     "name": "VariableDeclaration",
-                    "src": "7101:26:1"
+                    "src": "7386:26:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 178,
+                      "scope": 185,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -2740,21 +2869,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 169,
+                        "id": 176,
                         "name": "ElementaryTypeName",
-                        "src": "7128:7:1"
+                        "src": "7413:7:1"
                       }
                     ],
-                    "id": 170,
+                    "id": 177,
                     "name": "VariableDeclaration",
-                    "src": "7128:30:1"
+                    "src": "7413:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataOwner",
-                      "scope": 178,
+                      "scope": 185,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2767,21 +2896,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 171,
+                        "id": 178,
                         "name": "ElementaryTypeName",
-                        "src": "7160:7:1"
+                        "src": "7445:7:1"
                       }
                     ],
-                    "id": 172,
+                    "id": 179,
                     "name": "VariableDeclaration",
-                    "src": "7160:25:1"
+                    "src": "7445:25:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "price",
-                      "scope": 178,
+                      "scope": 185,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -2794,21 +2923,21 @@
                           "name": "uint",
                           "type": "uint256"
                         },
-                        "id": 173,
+                        "id": 180,
                         "name": "ElementaryTypeName",
-                        "src": "7187:4:1"
+                        "src": "7472:4:1"
                       }
                     ],
-                    "id": 174,
+                    "id": 181,
                     "name": "VariableDeclaration",
-                    "src": "7187:10:1"
+                    "src": "7472:10:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "success",
-                      "scope": 178,
+                      "scope": 185,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bool",
@@ -2821,24 +2950,24 @@
                           "name": "bool",
                           "type": "bool"
                         },
-                        "id": 175,
+                        "id": 182,
                         "name": "ElementaryTypeName",
-                        "src": "7199:4:1"
+                        "src": "7484:4:1"
                       }
                     ],
-                    "id": 176,
+                    "id": 183,
                     "name": "VariableDeclaration",
-                    "src": "7199:12:1"
+                    "src": "7484:12:1"
                   }
                 ],
-                "id": 177,
+                "id": 184,
                 "name": "ParameterList",
-                "src": "7100:112:1"
+                "src": "7385:112:1"
               }
             ],
-            "id": 178,
+            "id": 185,
             "name": "EventDefinition",
-            "src": "7084:129:1"
+            "src": "7369:129:1"
           },
           {
             "attributes": {
@@ -2853,7 +2982,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "editor",
-                      "scope": 186,
+                      "scope": 193,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2866,21 +2995,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 179,
+                        "id": 186,
                         "name": "ElementaryTypeName",
-                        "src": "7441:7:1"
+                        "src": "7726:7:1"
                       }
                     ],
-                    "id": 180,
+                    "id": 187,
                     "name": "VariableDeclaration",
-                    "src": "7441:22:1"
+                    "src": "7726:22:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 186,
+                      "scope": 193,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -2893,21 +3022,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 181,
+                        "id": 188,
                         "name": "ElementaryTypeName",
-                        "src": "7465:7:1"
+                        "src": "7750:7:1"
                       }
                     ],
-                    "id": 182,
+                    "id": 189,
                     "name": "VariableDeclaration",
-                    "src": "7465:30:1"
+                    "src": "7750:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "newPrice",
-                      "scope": 186,
+                      "scope": 193,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -2920,24 +3049,24 @@
                           "name": "uint256",
                           "type": "uint256"
                         },
-                        "id": 183,
+                        "id": 190,
                         "name": "ElementaryTypeName",
-                        "src": "7497:7:1"
+                        "src": "7782:7:1"
                       }
                     ],
-                    "id": 184,
+                    "id": 191,
                     "name": "VariableDeclaration",
-                    "src": "7497:16:1"
+                    "src": "7782:16:1"
                   }
                 ],
-                "id": 185,
+                "id": 192,
                 "name": "ParameterList",
-                "src": "7440:74:1"
+                "src": "7725:74:1"
               }
             ],
-            "id": 186,
+            "id": 193,
             "name": "EventDefinition",
-            "src": "7423:92:1"
+            "src": "7708:92:1"
           },
           {
             "attributes": {
@@ -2952,7 +3081,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "editor",
-                      "scope": 194,
+                      "scope": 201,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -2965,21 +3094,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 187,
+                        "id": 194,
                         "name": "ElementaryTypeName",
-                        "src": "7784:7:1"
+                        "src": "8069:7:1"
                       }
                     ],
-                    "id": 188,
+                    "id": 195,
                     "name": "VariableDeclaration",
-                    "src": "7784:22:1"
+                    "src": "8069:22:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 194,
+                      "scope": 201,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -2992,21 +3121,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 189,
+                        "id": 196,
                         "name": "ElementaryTypeName",
-                        "src": "7808:7:1"
+                        "src": "8093:7:1"
                       }
                     ],
-                    "id": 190,
+                    "id": 197,
                     "name": "VariableDeclaration",
-                    "src": "7808:30:1"
+                    "src": "8093:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "newStatus",
-                      "scope": 194,
+                      "scope": 201,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bool",
@@ -3019,24 +3148,24 @@
                           "name": "bool",
                           "type": "bool"
                         },
-                        "id": 191,
+                        "id": 198,
                         "name": "ElementaryTypeName",
-                        "src": "7840:4:1"
+                        "src": "8125:4:1"
                       }
                     ],
-                    "id": 192,
+                    "id": 199,
                     "name": "VariableDeclaration",
-                    "src": "7840:14:1"
+                    "src": "8125:14:1"
                   }
                 ],
-                "id": 193,
+                "id": 200,
                 "name": "ParameterList",
-                "src": "7783:72:1"
+                "src": "8068:72:1"
               }
             ],
-            "id": 194,
+            "id": 201,
             "name": "EventDefinition",
-            "src": "7763:93:1"
+            "src": "8048:93:1"
           },
           {
             "attributes": {
@@ -3051,7 +3180,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "dataOwner",
-                      "scope": 202,
+                      "scope": 209,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -3064,21 +3193,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 195,
+                        "id": 202,
                         "name": "ElementaryTypeName",
-                        "src": "8158:7:1"
+                        "src": "8443:7:1"
                       }
                     ],
-                    "id": 196,
+                    "id": 203,
                     "name": "VariableDeclaration",
-                    "src": "8158:25:1"
+                    "src": "8443:25:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 202,
+                      "scope": 209,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -3091,21 +3220,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 197,
+                        "id": 204,
                         "name": "ElementaryTypeName",
-                        "src": "8185:7:1"
+                        "src": "8470:7:1"
                       }
                     ],
-                    "id": 198,
+                    "id": 205,
                     "name": "VariableDeclaration",
-                    "src": "8185:30:1"
+                    "src": "8470:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "amount",
-                      "scope": 202,
+                      "scope": 209,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -3118,24 +3247,24 @@
                           "name": "uint256",
                           "type": "uint256"
                         },
-                        "id": 199,
+                        "id": 206,
                         "name": "ElementaryTypeName",
-                        "src": "8217:7:1"
+                        "src": "8502:7:1"
                       }
                     ],
-                    "id": 200,
+                    "id": 207,
                     "name": "VariableDeclaration",
-                    "src": "8217:14:1"
+                    "src": "8502:14:1"
                   }
                 ],
-                "id": 201,
+                "id": 208,
                 "name": "ParameterList",
-                "src": "8157:75:1"
+                "src": "8442:75:1"
               }
             ],
-            "id": 202,
+            "id": 209,
             "name": "EventDefinition",
-            "src": "8133:100:1"
+            "src": "8418:100:1"
           },
           {
             "attributes": {
@@ -3150,7 +3279,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "dataOwner",
-                      "scope": 210,
+                      "scope": 217,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -3163,21 +3292,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 203,
+                        "id": 210,
                         "name": "ElementaryTypeName",
-                        "src": "8501:7:1"
+                        "src": "8786:7:1"
                       }
                     ],
-                    "id": 204,
+                    "id": 211,
                     "name": "VariableDeclaration",
-                    "src": "8501:25:1"
+                    "src": "8786:25:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 210,
+                      "scope": 217,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -3190,21 +3319,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 205,
+                        "id": 212,
                         "name": "ElementaryTypeName",
-                        "src": "8528:7:1"
+                        "src": "8813:7:1"
                       }
                     ],
-                    "id": 206,
+                    "id": 213,
                     "name": "VariableDeclaration",
-                    "src": "8528:30:1"
+                    "src": "8813:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "amount",
-                      "scope": 210,
+                      "scope": 217,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -3217,24 +3346,24 @@
                           "name": "uint",
                           "type": "uint256"
                         },
-                        "id": 207,
+                        "id": 214,
                         "name": "ElementaryTypeName",
-                        "src": "8560:4:1"
+                        "src": "8845:4:1"
                       }
                     ],
-                    "id": 208,
+                    "id": 215,
                     "name": "VariableDeclaration",
-                    "src": "8560:11:1"
+                    "src": "8845:11:1"
                   }
                 ],
-                "id": 209,
+                "id": 216,
                 "name": "ParameterList",
-                "src": "8500:72:1"
+                "src": "8785:72:1"
               }
             ],
-            "id": 210,
+            "id": 217,
             "name": "EventDefinition",
-            "src": "8478:95:1"
+            "src": "8763:95:1"
           },
           {
             "attributes": {
@@ -3249,7 +3378,7 @@
                       "constant": false,
                       "indexed": true,
                       "name": "dataOwner",
-                      "scope": 218,
+                      "scope": 225,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -3262,21 +3391,21 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 211,
+                        "id": 218,
                         "name": "ElementaryTypeName",
-                        "src": "8861:7:1"
+                        "src": "9146:7:1"
                       }
                     ],
-                    "id": 212,
+                    "id": 219,
                     "name": "VariableDeclaration",
-                    "src": "8861:25:1"
+                    "src": "9146:25:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": true,
                       "name": "dataSourceName",
-                      "scope": 218,
+                      "scope": 225,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -3289,21 +3418,21 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 213,
+                        "id": 220,
                         "name": "ElementaryTypeName",
-                        "src": "8888:7:1"
+                        "src": "9173:7:1"
                       }
                     ],
-                    "id": 214,
+                    "id": 221,
                     "name": "VariableDeclaration",
-                    "src": "8888:30:1"
+                    "src": "9173:30:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "indexed": false,
                       "name": "isPunished",
-                      "scope": 218,
+                      "scope": 225,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bool",
@@ -3316,34 +3445,133 @@
                           "name": "bool",
                           "type": "bool"
                         },
-                        "id": 215,
+                        "id": 222,
                         "name": "ElementaryTypeName",
-                        "src": "8920:4:1"
+                        "src": "9205:4:1"
                       }
                     ],
-                    "id": 216,
+                    "id": 223,
                     "name": "VariableDeclaration",
-                    "src": "8920:15:1"
+                    "src": "9205:15:1"
                   }
                 ],
-                "id": 217,
+                "id": 224,
                 "name": "ParameterList",
-                "src": "8860:76:1"
+                "src": "9145:76:1"
               }
             ],
-            "id": 218,
+            "id": 225,
             "name": "EventDefinition",
-            "src": "8834:103:1"
+            "src": "9119:103:1"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "SubscriberRefund"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "name": "subscriber",
+                      "scope": 233,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 226,
+                        "name": "ElementaryTypeName",
+                        "src": "9463:7:1"
+                      }
+                    ],
+                    "id": 227,
+                    "name": "VariableDeclaration",
+                    "src": "9463:26:1"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "name": "dataSourceName",
+                      "scope": 233,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bytes32",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes32",
+                          "type": "bytes32"
+                        },
+                        "id": 228,
+                        "name": "ElementaryTypeName",
+                        "src": "9490:7:1"
+                      }
+                    ],
+                    "id": 229,
+                    "name": "VariableDeclaration",
+                    "src": "9490:30:1"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "name": "refundAmount",
+                      "scope": 233,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 230,
+                        "name": "ElementaryTypeName",
+                        "src": "9522:7:1"
+                      }
+                    ],
+                    "id": 231,
+                    "name": "VariableDeclaration",
+                    "src": "9522:20:1"
+                  }
+                ],
+                "id": 232,
+                "name": "ParameterList",
+                "src": "9462:81:1"
+              }
+            ],
+            "id": 233,
+            "name": "EventDefinition",
+            "src": "9440:104:1"
           }
         ],
-        "id": 219,
+        "id": 234,
         "name": "ContractDefinition",
-        "src": "130:8809:1"
+        "src": "130:9416:1"
       }
     ],
-    "id": 220,
+    "id": 235,
     "name": "SourceUnit",
-    "src": "0:8939:1"
+    "src": "0:9546:1"
   },
   "compiler": {
     "name": "solc",
@@ -3351,5 +3579,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-01-31T15:38:12.101Z"
+  "updatedAt": "2018-01-31T18:48:02.587Z"
 }

@@ -108,6 +108,12 @@ contract IMarketplace{
 	*/
 	function getMarketplaceTotalBalance() public view returns (uint256 totalBalance);
 	/*
+	*@dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)
+	*@param _dataSourceName - the data source name 
+	*@return success - true if happend false otherwise.
+	*/
+	function refundSubscriber(bytes32 _dataSourceName) public returns(bool success);
+	/*
 	*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.
 	*transfering to the owner registred wallet. can be activated only with the owners wallet.
 	*@param _dataSourceName - the name of the data source 
@@ -193,4 +199,11 @@ contract IMarketplace{
 	*@param isPunished - the status current status AFTER the change
     */
     event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);
+	/*
+	*@dev triggerd when the subscriber got a refund (punished provider)
+	*@param subscriber - the refunded address
+	*@param dataSourceName - name of the data source
+	*@param amount - the amount of the refund
+	*/
+    event SubscriberRefund(address indexed subscriber,bytes32 indexed dataSourceName, uint256 refundAmount);
 }

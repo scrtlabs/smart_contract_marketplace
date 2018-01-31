@@ -13,11 +13,20 @@ contract('Marketplace', function(accounts) {
 	const dataSet2 = "Data2";
 	const expiredDataSet = "ExpiredData";
 	const dataOwner1= accounts[1];
-	const price1= 100;
+	const price1= 1000;
 	const price2= 200;
 	const price3 = 320;
 	const subscriber1 = accounts[0];
 	const expiredSubscriber = accounts[0];
+ if(simple && true)
+ 	it("Should get the contract version",function(){
+ 		return Marketplace.deployed().then(insntace=>{
+ 			return insntace.MARKETPLACE_VERSION.call();
+ 		}).then(v=>{
+ 			var version = "1";
+ 			assert.equal(version,v,"versions dont match");
+ 		});
+ 	});
  if(simple && true)
   it("Should register Data 2 providers ",function(){
     return Marketplace.deployed().then(instance=>{
@@ -54,7 +63,7 @@ if(simple && complicated && true)
   			return marketPlace.isExpiredSubscription.call(subscriber1,dataSet1);
   		}).then(bool=>{
   			assert.equal(bool,false,"Subscription is expired => not existing");
-  			return enigma.balanceOf.call(subscriber1);
+  			return marketPlace.getMarketplaceTotalBalance.call();
   		}).then(ContractBalance=>{
   			assert.equal(ContractBalance.toNumber(),price1,"Contract balance is not equal");
   		});
@@ -107,6 +116,14 @@ if(simple && subscriptions && mock && true)
 			return instance.getRefundAmount(expiredSubscriber,expiredDataSet);
 		}).then(refundAmount=>{
 			assert(price3/2, refundAmount.toNumber(),"Refund amount dont match");
+		});
+	});
+if(simple && subscriptions && mock && true)
+	it("Should withdraw providers tokens",function(){
+		return Marketplace.deployed().then(instance=>{
+			return instance.withdrawProvider(expiredDataSet,{from:dataOwner1});
+		}).then(tx=>{
+			console.log(JSON.stringify(tx,null,2));
 		});
 	});
 });

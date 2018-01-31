@@ -45,23 +45,25 @@ contract Marketplace is Ownable,IMarketplace{
         bool isActive;
         bytes32 nextProvider;
     }
-
-    // pointer to linked listen 
+    // pointers to linked list of Providers
     bytes32 mBegin; 
     bytes32 mCurrent;
+    // number of providers
     uint mProvidersSize;
 	// Enigma Token
 	IERC20 public mToken;
 	// Fixed time defined (unixTimeStamp)
 	uint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;
+    // version number 
+    string public constant MARKETPLACE_VERSION = "1";
     // all providers
-    mapping(bytes32=>Provider) mProviders;
-    mapping(bytes32=>Order[]) mOrders;
+    mapping(bytes32=>Provider) public mProviders;
+    mapping(bytes32=>Order[]) public mOrders;
 
 	function Marketplace(address _tokenAddress) public {
 		require(_tokenAddress != address(0));
 		mToken = IERC20(_tokenAddress);
-		mOwner = msg.sender;
+        // initiate linked map 
         mProviders[0x0].nextProvider = "";
         mProviders[0x0].name = 0x0;
         mCurrent = mProviders[0x0].name;
@@ -125,6 +127,23 @@ contract Marketplace is Ownable,IMarketplace{
     returns (bool success){
         mProviders[_dataSourceName].isActive = _isActive;
         ActivityUpdate(msg.sender, _dataSourceName, _isActive);
+        success = true;
+    }
+    function refundSubscriber(bytes32 _dataSourceName) 
+    public 
+    returns
+    (bool success){
+        require(mProviders[_dataSourceName].isProvider);
+        uint256 refundAmount = 0;
+        uint size = mOrders[_dataSourceName].length;
+        for(uint i=0; i<size ;i++){
+            if(mOrders[_dataSourceName][i].subscriber == msg.sender){
+                uint256 refund = handleOrderRefundCalc(mOrders[_dataSourceName][i]);
+                refundAmount = refundAmount.add(refund);
+            }
+        }
+        require(safeToSubscriberTransfer(msg.sender,refundAmount));
+        SubscriberRefund(msg.sender,_dataSourceName,refundAmount);
         success = true;
     }
     function getRefundAmount(address _subscriber , bytes32 _dataSourceName) 
@@ -360,8 +379,11 @@ contract Marketplace is Ownable,IMarketplace{
     function isOrderExpired(Order order) internal view returns (bool isExpired){
         return order.endTime <= now;
     }
-    function safeToMarketPlaceTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
-         require( _from != address(0) && _to != address(0));
+    function safeToMarketPlaceTransfer(address _from, address _to, uint256 _amount) 
+    internal
+    validPrice(_amount)
+    returns (bool){
+         require(_from != address(0) && _to != address(0));
          require(mToken.allowance(_from,address(this)) >= _amount);
          require(mToken.transferFrom(_from,_to,_amount));
          SubscriptionDeposited(_from, _to, _amount);
@@ -369,13 +391,24 @@ contract Marketplace is Ownable,IMarketplace{
     }
     function safeToProviderTransfer(bytes32 _dataSourceName,uint256 _amount) 
     internal 
+    validPrice(_amount)
     onlyDataProvider(_dataSourceName) 
     returns (bool){
+         require(_amount > 0);
          require(mProviders[_dataSourceName].owner != address(0));
          require(mToken.transfer(mProviders[_dataSourceName].owner,_amount));
          TransferToProvider(mProviders[_dataSourceName].owner,_dataSourceName,_amount);
          return true;
      }
+    function safeToSubscriberTransfer(address _subscriber,uint256 _amount) 
+    internal 
+    validPrice(_amount)
+    returns (bool){
+        require(_amount > 0);
+        require(_subscriber == msg.sender);
+        require(mToken.transfer(msg.sender, _amount));
+        return true;
+    }
     /* modifiers */
     modifier validDataProvider(bytes32 _dataSourceName){
         require(mProviders[_dataSourceName].isProvider);

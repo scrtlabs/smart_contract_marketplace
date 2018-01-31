@@ -27,7 +27,6 @@ contract EnigmaToken is StandardToken {
   string public constant symbol = 'ENG';                                       // Set the token symbol for display
   uint8 public constant decimals = 8;                                          // Set the number of decimals for display
   uint256 public constant INITIAL_SUPPLY = 150000000 * 10**8;  // 150 million ENG specified in Grains
-   address public test;
   /**
    * @dev SesnseToken Constructor
    * Runs only on initial contract creation.
@@ -45,7 +44,6 @@ contract EnigmaToken is StandardToken {
    */
   function transfer(address _to, uint256 _value) returns (bool) {
     require(_to != address(0));
-    test= msg.sender;
     return super.transfer(_to, _value);
   }
 
@@ -72,8 +70,4 @@ contract EnigmaToken is StandardToken {
     return super.allowance(_owner,_spender);
   }
 
-  // TEST METHODS - DELETE 
-  function getTest() public returns (address){
-    return test;
-  }
 }
