@@ -54,7 +54,7 @@ if(simple && complicated && true)
   			return marketPlace.isExpiredSubscription.call(subscriber1,dataSet1);
   		}).then(bool=>{
   			assert.equal(bool,false,"Subscription is expired => not existing");
-  			return marketPlace.getMarketplaceTotalBalance.call();
+  			return enigma.balanceOf.call(subscriber1);
   		}).then(ContractBalance=>{
   			assert.equal(ContractBalance.toNumber(),price1,"Contract balance is not equal");
   		});

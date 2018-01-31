@@ -38,7 +38,7 @@ contract IMarketplace{
 	*@paran _dataOwner the account that will get paid and owns the data.
 	*@return true if success.
 	*/
-	function register(bytes32 _dataSourceName, uint _price, address _dataOwner) public returns (bool success);
+	function register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);
 	/*
 	*@dev change the punishment status of a provider, defaults to false (not punished)
 	*@param _dataSourceName - the provider 
@@ -60,7 +60,8 @@ contract IMarketplace{
     *@return bool - isPunishedProvider , is the provider of the subscription punished
     *@return bool - isOrder , true if the order exists, false otherwise
 	*/
-	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (address subscriber,
+	function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view 
+	returns (address subscriber,
         bytes32 dataSourceName,
         uint price,
         uint startTime,
@@ -74,7 +75,7 @@ contract IMarketplace{
 	*@param _dataSourceName the name of the data source
 	*@return address the owner address
 	*/
-	function getOwnerFromName(bytes32 _dataSourceName) public view returns(address);
+	function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner);
 	/*
 	*@dev get information regarding some data source given a name.
 	*@param _dataSourceName the data source name
@@ -105,7 +106,7 @@ contract IMarketplace{
 	*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request 
 	*@return uint256 total balance in ENG tokens  
 	*/
-	function getMarketplaceCurrentBalance() public view returns (uint256 totalBalance);
+	function getMarketplaceTotalBalance() public view returns (uint256 totalBalance);
 	/*
 	*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.
 	*transfering to the owner registred wallet. can be activated only with the owners wallet.
@@ -126,6 +127,11 @@ contract IMarketplace{
 	*@return refundAmount - total amount that can be refunded
 	*/
 	function getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);
+	/*
+	*@dev get all the providers names 
+	*@param bytes32[] array of all time providers 
+	*/
+	function getAllProviders() public view returns (bytes32[]);
 	/*********** Events ************/
 	
 	/*
@@ -137,12 +143,12 @@ contract IMarketplace{
 	*/
 	event Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);
 	/*
-	*@dev an event that indicates that someone has paid during subscription (before that data is updated in the contract)
+	*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)
 	*@param from who paid
 	*@param to the data source owner
 	*@param value the value that was transfered
 	*/
-	event SubscriptionPaid(address indexed from, address indexed to, uint256 value);
+	event SubscriptionDeposited(address indexed from, address indexed to, uint256 value);
 	/*
 	*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).
 	*@param subscriber who subscribed
@@ -166,4 +172,25 @@ contract IMarketplace{
 	@param newStatus true = active, false = not active (cannot be sold)
 	*/
 	event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);
+	/*
+	*@dev triggerd upon a token transfer to provider (before finishing state update)
+	*@param dataOwner - the owner that got paid 
+	*@param dataSourceName - the name of the data source
+	*@param amount - the amount transferd from the marketplace contract to the provider
+	*/
+	event TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);
+	/*
+	*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)
+	*@param dataOwner - the owner that withdrawed
+	*@param dataSourceName - name of the data source
+	*@param amount - the amount withdrawed
+	*/
+	event ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);
+    /*
+	*@dev triggerd when punishment status changed (true = punished, false = not punished)
+	*@param dataOwner - the provider 
+	*@param dataSourceName - the name of the data source 
+	*@param isPunished - the status current status AFTER the change
+    */
+    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);
 }
