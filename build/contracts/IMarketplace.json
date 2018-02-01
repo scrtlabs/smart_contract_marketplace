@@ -338,7 +338,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IMarketplace{\n\t/*\n\t*@dev if data set owner wants to update the price for FUTURE users.\n\t*@param _dataSourceName name of the data source\n\t*@param _newPrice the new price\n\t*@return true if updated;\n\t*/\n\t//function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool success);\n\t/*\n\t*@dev the ability to turn off/on a data set for FUTURE sales. Default on subscriotion is TRUE.\n\t*@param _datasourceName the name of the data source.\n\t*@param _isActive true = sellable , false = not sellable \n\t*@return true if success.\n\t*/\n\t//function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) external returns (bool success);\n\t/*\n\t*@dev data providers can decide to turn off/on their offer for future requests.\n\t*@param _dataSourceName the data source in context\n\t*@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)\n\t*/\n\t//function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive);\n\t/*\n\t*@dev used by users who would like to use and pay a data provider. \n\t*@param _dataSourceName chosen data source name.\n\t*@return bool true of successful. \n\t*/\n\tfunction subscribe(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t*@dev for data providers to list their data set. \n\t*@param _dataSourceName the unique name that will be used for listing the data set\n\t*@param _price the subscription price \n\t*@paran _dataOwner the account that will get paid and owns the data.\n\t*@return true if success.\n\t*/\n\tfunction register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);\n\t/*\n\t*@dev change the punishment status of a provider, defaults to false (not punished)\n\t*@param _dataSourceName - the provider \n\t*@param _isPunished - true = punish , false = not punished\n\t*@return bool - successful transaction \n\t*/\n\tfunction setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);\n\t/*\n\t*@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)\n\t*@param _subscriber the subscriber address\n\t*@param _dataSourceName the name of the data source to check against\n\t*@return address - the subscriber address (double verification)\n\t*@return bytes32 - the data set name (double verification)\n\t*@return uint - subscription price\n\t*@return uint - subscription start time\n\t*@return uint - subscription end time\n\t*@return bool - is subscription expired, true = expired, false = not expired\n\t*@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) \n    *@return bool - isPunishedProvider , is the provider of the subscription punished\n    *@return bool - isOrder , true if the order exists, false otherwise\n\t*/\n\t// function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view \n\t// returns (address subscriber,\n //        bytes32 dataSourceName,\n //        uint price,\n //        uint startTime,\n //        uint endTime,\n //        bool isExpired,\n //        bool isPaid, \n //        bool isPunishedProvider,\n //        bool isOrder);\n\t/*\n\t*@dev get the address of the owner given a data source name. \n\t*@param _dataSourceName the name of the data source\n\t*@return address the owner address\n\t*/\n\t//function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner);\n\t/*\n\t*@dev get information regarding some data source given a name.\n\t*@param _dataSourceName the data source name\n\t*@return address owner - data source owner\n\t*@return uint256 price - the current price of the data set \n\t*@return uint256 volume - the total sum of the tokens paid since registration.\n\t*@return uint256 - total counter of the subscriptions number to that data source\n\t*@return bool isProvider - should always be true if registry exists\n\t*@return bool isActive - true = selling, false = not selling (not active)\n\t*@return bool isPunished - true if punished false otherwise\n\t*/\n\t// function getDataProviderInfo(bytes32 _dataSourceName) public view returns(\n\t// \taddress owner,\n\t// \tuint256 price,\n\t// \tuint256 volume,\n\t// \tuint256 subscriptionsNum,\n\t// \tbool isProvider,\n\t// \tbool isActive,\n\t// \tbool isPunished);\n\t/*\n\t@dev verify that a subscriber can access data source\n\t@param _subscriber the subscriber to check\n\t@param _dataSourceName the data source being checked \n\t@return bool true if expired, false otherwise\n\t*/\n\t//function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);\n\t/*\n\t*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request \n\t*@return uint256 total balance in ENG tokens  \n\t*/\n\tfunction getMarketplaceTotalBalance() public view returns (uint256 totalBalance);\n\t/*\n\t*@dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)\n\t*@param _dataSourceName - the data source name \n\t*@return success - true if happend false otherwise.\n\t*/\n\tfunction refundSubscriber(bytes32 _dataSourceName) public returns(bool success);\n\t/*\n\t*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\n\t*transfering to the owner registred wallet. can be activated only with the owners wallet.\n\t*@param _dataSourceName - the name of the data source \n\t*@return bool success - true if transferd false otherwise\n\t*/\n\tfunction withdrawProvider(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t@dev get the withdraw amount of a provider (not transfering)\n\t@param _dataSourceName - the name of the data source \n\t@return withdrawAmount - total amount that can be withdrawed\n\t*/\n\tfunction getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);\n\t/*\n\t*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)\n\t*@param _susbcriber the subscriber address\n\t*@param _dataSourceName the name of the data provider \n\t*@return refundAmount - total amount that can be refunded\n\t*/\n\tfunction getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);\n\t/*\n\t*@dev get all the providers names \n\t*@param bytes32[] array of all time providers \n\t*/\n\t//function getAllProviders() public view returns (bytes32[]);\n\t/*********** Events ************/\n\t\n\t/*\n\t*@dev When data provider finishes registration in the contract\n\t*@param dataOwner the owner of the data\n\t*@param dataSourceName the new name registred\n\t*@param price the price for subscription\n\t*@param true if registred successfully\n\t*/\n\tevent Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);\n\t/*\n\t*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\n\t*@param from who paid\n\t*@param to the data source owner\n\t*@param value the value that was transfered\n\t*/\n\tevent SubscriptionDeposited(address indexed from, address indexed to, uint256 value);\n\t/*\n\t*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\n\t*@param subscriber who subscribed\n\t*@param dataSourceName the data source name\n\t*@param dataOwner the owner of the data source\n\t*@param price the price paid for subscription\n\t*@param success true if subscribed successfully\n\t*/\n\tevent Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);\n\t/*\n\t*@dev triggerd uppon a price change of an existing data source\n\t@param editor the owner that changed the price\n\t@param dataSourceName the data source that has changed\n\t@param newPrice the new price.\n\t*/\n\t//event PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);\n\t/*\n\t*@dev triggerd upon a change in the state of a data source availablity.\n\t@param editor who changed the activity state\n\t@param dataSourceName which dataSource changed. \n\t@param newStatus true = active, false = not active (cannot be sold)\n\t*/\n\t//event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);\n\t/*\n\t*@dev triggerd upon a token transfer to provider (before finishing state update)\n\t*@param dataOwner - the owner that got paid \n\t*@param dataSourceName - the name of the data source\n\t*@param amount - the amount transferd from the marketplace contract to the provider\n\t*/\n\tevent TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);\n\t/*\n\t*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\n\t*@param dataOwner - the owner that withdrawed\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount withdrawed\n\t*/\n\tevent ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);\n    /*\n\t*@dev triggerd when punishment status changed (true = punished, false = not punished)\n\t*@param dataOwner - the provider \n\t*@param dataSourceName - the name of the data source \n\t*@param isPunished - the status current status AFTER the change\n    */\n    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);\n\t/*\n\t*@dev triggerd when the subscriber got a refund (punished provider)\n\t*@param subscriber - the refunded address\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount of the refund\n\t*/\n    event SubscriberRefund(address indexed subscriber,bytes32 indexed dataSourceName, uint256 refundAmount);\n}",
+  "source": "pragma solidity 0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IMarketplace{\n\n\t/*\n\t*@dev used by users who would like to use and pay a data provider. \n\t*@param _dataSourceName chosen data source name.\n\t*@return bool true of successful. \n\t*/\n\tfunction subscribe(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t*@dev for data providers to list their data set. \n\t*@param _dataSourceName the unique name that will be used for listing the data set\n\t*@param _price the subscription price \n\t*@paran _dataOwner the account that will get paid and owns the data.\n\t*@return true if success.\n\t*/\n\tfunction register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);\n\t/*\n\t*@dev change the punishment status of a provider, defaults to false (not punished)\n\t*@param _dataSourceName - the provider \n\t*@param _isPunished - true = punish , false = not punished\n\t*@return bool - successful transaction \n\t*/\n\tfunction setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);\n\t/*\n\t*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request \n\t*@return uint256 total balance in ENG tokens  \n\t*/\n\tfunction getMarketplaceTotalBalance() public view returns (uint256 totalBalance);\n\t/*\n\t*@dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)\n\t*@param _dataSourceName - the data source name \n\t*@return success - true if happend false otherwise.\n\t*/\n\tfunction refundSubscriber(bytes32 _dataSourceName) public returns(bool success);\n\t/*\n\t*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\n\t*transfering to the owner registred wallet. can be activated only with the owners wallet.\n\t*@param _dataSourceName - the name of the data source \n\t*@return bool success - true if transferd false otherwise\n\t*/\n\tfunction withdrawProvider(bytes32 _dataSourceName) public returns (bool success);\n\t/*\n\t@dev get the withdraw amount of a provider (not transfering)\n\t@param _dataSourceName - the name of the data source \n\t@return withdrawAmount - total amount that can be withdrawed\n\t*/\n\tfunction getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);\n\t/*\n\t*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)\n\t*@param _susbcriber the subscriber address\n\t*@param _dataSourceName the name of the data provider \n\t*@return refundAmount - total amount that can be refunded\n\t*/\n\tfunction getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);\n\t/*********** Events ************/\n\t\n\t/*\n\t*@dev When data provider finishes registration in the contract\n\t*@param dataOwner the owner of the data\n\t*@param dataSourceName the new name registred\n\t*@param price the price for subscription\n\t*@param true if registred successfully\n\t*/\n\tevent Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);\n\t/*\n\t*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\n\t*@param from who paid\n\t*@param to the data source owner\n\t*@param value the value that was transfered\n\t*/\n\tevent SubscriptionDeposited(address indexed from, address indexed to, uint256 value);\n\t/*\n\t*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\n\t*@param subscriber who subscribed\n\t*@param dataSourceName the data source name\n\t*@param dataOwner the owner of the data source\n\t*@param price the price paid for subscription\n\t*@param success true if subscribed successfully\n\t*/\n\tevent Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);\n\t/*\n\t*@dev triggerd upon a token transfer to provider (before finishing state update)\n\t*@param dataOwner - the owner that got paid \n\t*@param dataSourceName - the name of the data source\n\t*@param amount - the amount transferd from the marketplace contract to the provider\n\t*/\n\tevent TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);\n\t/*\n\t*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\n\t*@param dataOwner - the owner that withdrawed\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount withdrawed\n\t*/\n\tevent ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);\n    /*\n\t*@dev triggerd when punishment status changed (true = punished, false = not punished)\n\t*@param dataOwner - the provider \n\t*@param dataSourceName - the name of the data source \n\t*@param isPunished - the status current status AFTER the change\n    */\n    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);\n\t/*\n\t*@dev triggerd when the subscriber got a refund (punished provider)\n\t*@param subscriber - the refunded address\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount of the refund\n\t*/\n    event SubscriberRefund(address indexed subscriber,bytes32 indexed dataSourceName, uint256 refundAmount);\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IMarketplace.sol",
   "ast": {
     "attributes": {
@@ -354,14 +354,13 @@
         "attributes": {
           "literals": [
             "solidity",
-            "^",
             "0.4",
             ".18"
           ]
         },
         "id": 849,
         "name": "PragmaDirective",
-        "src": "0:24:3"
+        "src": "0:23:2"
       },
       {
         "attributes": {
@@ -419,17 +418,17 @@
                         },
                         "id": 850,
                         "name": "ElementaryTypeName",
-                        "src": "1333:7:3"
+                        "src": "336:7:2"
                       }
                     ],
                     "id": 851,
                     "name": "VariableDeclaration",
-                    "src": "1333:23:3"
+                    "src": "336:23:2"
                   }
                 ],
                 "id": 852,
                 "name": "ParameterList",
-                "src": "1332:25:3"
+                "src": "335:25:2"
               },
               {
                 "children": [
@@ -452,22 +451,22 @@
                         },
                         "id": 853,
                         "name": "ElementaryTypeName",
-                        "src": "1374:4:3"
+                        "src": "377:4:2"
                       }
                     ],
                     "id": 854,
                     "name": "VariableDeclaration",
-                    "src": "1374:12:3"
+                    "src": "377:12:2"
                   }
                 ],
                 "id": 855,
                 "name": "ParameterList",
-                "src": "1373:14:3"
+                "src": "376:14:2"
               }
             ],
             "id": 856,
             "name": "FunctionDefinition",
-            "src": "1314:74:3"
+            "src": "317:74:2"
           },
           {
             "attributes": {
@@ -507,12 +506,12 @@
                         },
                         "id": 857,
                         "name": "ElementaryTypeName",
-                        "src": "1688:7:3"
+                        "src": "691:7:2"
                       }
                     ],
                     "id": 858,
                     "name": "VariableDeclaration",
-                    "src": "1688:23:3"
+                    "src": "691:23:2"
                   },
                   {
                     "attributes": {
@@ -533,12 +532,12 @@
                         },
                         "id": 859,
                         "name": "ElementaryTypeName",
-                        "src": "1713:7:3"
+                        "src": "716:7:2"
                       }
                     ],
                     "id": 860,
                     "name": "VariableDeclaration",
-                    "src": "1713:14:3"
+                    "src": "716:14:2"
                   },
                   {
                     "attributes": {
@@ -559,17 +558,17 @@
                         },
                         "id": 861,
                         "name": "ElementaryTypeName",
-                        "src": "1729:7:3"
+                        "src": "732:7:2"
                       }
                     ],
                     "id": 862,
                     "name": "VariableDeclaration",
-                    "src": "1729:18:3"
+                    "src": "732:18:2"
                   }
                 ],
                 "id": 863,
                 "name": "ParameterList",
-                "src": "1687:61:3"
+                "src": "690:61:2"
               },
               {
                 "children": [
@@ -592,22 +591,22 @@
                         },
                         "id": 864,
                         "name": "ElementaryTypeName",
-                        "src": "1765:4:3"
+                        "src": "768:4:2"
                       }
                     ],
                     "id": 865,
                     "name": "VariableDeclaration",
-                    "src": "1765:12:3"
+                    "src": "768:12:2"
                   }
                 ],
                 "id": 866,
                 "name": "ParameterList",
-                "src": "1764:14:3"
+                "src": "767:14:2"
               }
             ],
             "id": 867,
             "name": "FunctionDefinition",
-            "src": "1670:109:3"
+            "src": "673:109:2"
           },
           {
             "attributes": {
@@ -647,12 +646,12 @@
                         },
                         "id": 868,
                         "name": "ElementaryTypeName",
-                        "src": "2042:7:3"
+                        "src": "1045:7:2"
                       }
                     ],
                     "id": 869,
                     "name": "VariableDeclaration",
-                    "src": "2042:23:3"
+                    "src": "1045:23:2"
                   },
                   {
                     "attributes": {
@@ -673,17 +672,17 @@
                         },
                         "id": 870,
                         "name": "ElementaryTypeName",
-                        "src": "2067:4:3"
+                        "src": "1070:4:2"
                       }
                     ],
                     "id": 871,
                     "name": "VariableDeclaration",
-                    "src": "2067:16:3"
+                    "src": "1070:16:2"
                   }
                 ],
                 "id": 872,
                 "name": "ParameterList",
-                "src": "2041:43:3"
+                "src": "1044:43:2"
               },
               {
                 "children": [
@@ -706,22 +705,22 @@
                         },
                         "id": 873,
                         "name": "ElementaryTypeName",
-                        "src": "2101:4:3"
+                        "src": "1104:4:2"
                       }
                     ],
                     "id": 874,
                     "name": "VariableDeclaration",
-                    "src": "2101:12:3"
+                    "src": "1104:12:2"
                   }
                 ],
                 "id": 875,
                 "name": "ParameterList",
-                "src": "2100:14:3"
+                "src": "1103:14:2"
               }
             ],
             "id": 876,
             "name": "FunctionDefinition",
-            "src": "2015:100:3"
+            "src": "1018:100:2"
           },
           {
             "attributes": {
@@ -749,7 +748,7 @@
                 "children": [],
                 "id": 877,
                 "name": "ParameterList",
-                "src": "4845:2:3"
+                "src": "1301:2:2"
               },
               {
                 "children": [
@@ -772,22 +771,22 @@
                         },
                         "id": 878,
                         "name": "ElementaryTypeName",
-                        "src": "4869:7:3"
+                        "src": "1325:7:2"
                       }
                     ],
                     "id": 879,
                     "name": "VariableDeclaration",
-                    "src": "4869:20:3"
+                    "src": "1325:20:2"
                   }
                 ],
                 "id": 880,
                 "name": "ParameterList",
-                "src": "4868:22:3"
+                "src": "1324:22:2"
               }
             ],
             "id": 881,
             "name": "FunctionDefinition",
-            "src": "4810:81:3"
+            "src": "1266:81:2"
           },
           {
             "attributes": {
@@ -827,17 +826,17 @@
                         },
                         "id": 882,
                         "name": "ElementaryTypeName",
-                        "src": "5122:7:3"
+                        "src": "1578:7:2"
                       }
                     ],
                     "id": 883,
                     "name": "VariableDeclaration",
-                    "src": "5122:23:3"
+                    "src": "1578:23:2"
                   }
                 ],
                 "id": 884,
                 "name": "ParameterList",
-                "src": "5121:25:3"
+                "src": "1577:25:2"
               },
               {
                 "children": [
@@ -860,22 +859,22 @@
                         },
                         "id": 885,
                         "name": "ElementaryTypeName",
-                        "src": "5162:4:3"
+                        "src": "1618:4:2"
                       }
                     ],
                     "id": 886,
                     "name": "VariableDeclaration",
-                    "src": "5162:12:3"
+                    "src": "1618:12:2"
                   }
                 ],
                 "id": 887,
                 "name": "ParameterList",
-                "src": "5161:14:3"
+                "src": "1617:14:2"
               }
             ],
             "id": 888,
             "name": "FunctionDefinition",
-            "src": "5096:80:3"
+            "src": "1552:80:2"
           },
           {
             "attributes": {
@@ -915,17 +914,17 @@
                         },
                         "id": 889,
                         "name": "ElementaryTypeName",
-                        "src": "5507:7:3"
+                        "src": "1963:7:2"
                       }
                     ],
                     "id": 890,
                     "name": "VariableDeclaration",
-                    "src": "5507:23:3"
+                    "src": "1963:23:2"
                   }
                 ],
                 "id": 891,
                 "name": "ParameterList",
-                "src": "5506:25:3"
+                "src": "1962:25:2"
               },
               {
                 "children": [
@@ -948,22 +947,22 @@
                         },
                         "id": 892,
                         "name": "ElementaryTypeName",
-                        "src": "5548:4:3"
+                        "src": "2004:4:2"
                       }
                     ],
                     "id": 893,
                     "name": "VariableDeclaration",
-                    "src": "5548:12:3"
+                    "src": "2004:12:2"
                   }
                 ],
                 "id": 894,
                 "name": "ParameterList",
-                "src": "5547:14:3"
+                "src": "2003:14:2"
               }
             ],
             "id": 895,
             "name": "FunctionDefinition",
-            "src": "5481:81:3"
+            "src": "1937:81:2"
           },
           {
             "attributes": {
@@ -1003,17 +1002,17 @@
                         },
                         "id": 896,
                         "name": "ElementaryTypeName",
-                        "src": "5778:7:3"
+                        "src": "2234:7:2"
                       }
                     ],
                     "id": 897,
                     "name": "VariableDeclaration",
-                    "src": "5778:23:3"
+                    "src": "2234:23:2"
                   }
                 ],
                 "id": 898,
                 "name": "ParameterList",
-                "src": "5777:25:3"
+                "src": "2233:25:2"
               },
               {
                 "children": [
@@ -1036,22 +1035,22 @@
                         },
                         "id": 899,
                         "name": "ElementaryTypeName",
-                        "src": "5823:7:3"
+                        "src": "2279:7:2"
                       }
                     ],
                     "id": 900,
                     "name": "VariableDeclaration",
-                    "src": "5823:22:3"
+                    "src": "2279:22:2"
                   }
                 ],
                 "id": 901,
                 "name": "ParameterList",
-                "src": "5822:24:3"
+                "src": "2278:24:2"
               }
             ],
             "id": 902,
             "name": "FunctionDefinition",
-            "src": "5751:96:3"
+            "src": "2207:96:2"
           },
           {
             "attributes": {
@@ -1091,12 +1090,12 @@
                         },
                         "id": 903,
                         "name": "ElementaryTypeName",
-                        "src": "6137:7:3"
+                        "src": "2593:7:2"
                       }
                     ],
                     "id": 904,
                     "name": "VariableDeclaration",
-                    "src": "6137:19:3"
+                    "src": "2593:19:2"
                   },
                   {
                     "attributes": {
@@ -1117,17 +1116,17 @@
                         },
                         "id": 905,
                         "name": "ElementaryTypeName",
-                        "src": "6159:7:3"
+                        "src": "2615:7:2"
                       }
                     ],
                     "id": 906,
                     "name": "VariableDeclaration",
-                    "src": "6159:23:3"
+                    "src": "2615:23:2"
                   }
                 ],
                 "id": 907,
                 "name": "ParameterList",
-                "src": "6136:47:3"
+                "src": "2592:47:2"
               },
               {
                 "children": [
@@ -1150,22 +1149,22 @@
                         },
                         "id": 908,
                         "name": "ElementaryTypeName",
-                        "src": "6204:7:3"
+                        "src": "2660:7:2"
                       }
                     ],
                     "id": 909,
                     "name": "VariableDeclaration",
-                    "src": "6204:20:3"
+                    "src": "2660:20:2"
                   }
                 ],
                 "id": 910,
                 "name": "ParameterList",
-                "src": "6203:22:3"
+                "src": "2659:22:2"
               }
             ],
             "id": 911,
             "name": "FunctionDefinition",
-            "src": "6112:114:3"
+            "src": "2568:114:2"
           },
           {
             "attributes": {
@@ -1195,12 +1194,12 @@
                         },
                         "id": 912,
                         "name": "ElementaryTypeName",
-                        "src": "6679:7:3"
+                        "src": "2980:7:2"
                       }
                     ],
                     "id": 913,
                     "name": "VariableDeclaration",
-                    "src": "6679:25:3"
+                    "src": "2980:25:2"
                   },
                   {
                     "attributes": {
@@ -1222,12 +1221,12 @@
                         },
                         "id": 914,
                         "name": "ElementaryTypeName",
-                        "src": "6706:7:3"
+                        "src": "3007:7:2"
                       }
                     ],
                     "id": 915,
                     "name": "VariableDeclaration",
-                    "src": "6706:30:3"
+                    "src": "3007:30:2"
                   },
                   {
                     "attributes": {
@@ -1249,12 +1248,12 @@
                         },
                         "id": 916,
                         "name": "ElementaryTypeName",
-                        "src": "6738:4:3"
+                        "src": "3039:4:2"
                       }
                     ],
                     "id": 917,
                     "name": "VariableDeclaration",
-                    "src": "6738:10:3"
+                    "src": "3039:10:2"
                   },
                   {
                     "attributes": {
@@ -1276,22 +1275,22 @@
                         },
                         "id": 918,
                         "name": "ElementaryTypeName",
-                        "src": "6750:4:3"
+                        "src": "3051:4:2"
                       }
                     ],
                     "id": 919,
                     "name": "VariableDeclaration",
-                    "src": "6750:12:3"
+                    "src": "3051:12:2"
                   }
                 ],
                 "id": 920,
                 "name": "ParameterList",
-                "src": "6678:85:3"
+                "src": "2979:85:2"
               }
             ],
             "id": 921,
             "name": "EventDefinition",
-            "src": "6662:102:3"
+            "src": "2963:102:2"
           },
           {
             "attributes": {
@@ -1321,12 +1320,12 @@
                         },
                         "id": 922,
                         "name": "ElementaryTypeName",
-                        "src": "7041:7:3"
+                        "src": "3342:7:2"
                       }
                     ],
                     "id": 923,
                     "name": "VariableDeclaration",
-                    "src": "7041:20:3"
+                    "src": "3342:20:2"
                   },
                   {
                     "attributes": {
@@ -1348,12 +1347,12 @@
                         },
                         "id": 924,
                         "name": "ElementaryTypeName",
-                        "src": "7063:7:3"
+                        "src": "3364:7:2"
                       }
                     ],
                     "id": 925,
                     "name": "VariableDeclaration",
-                    "src": "7063:18:3"
+                    "src": "3364:18:2"
                   },
                   {
                     "attributes": {
@@ -1375,22 +1374,22 @@
                         },
                         "id": 926,
                         "name": "ElementaryTypeName",
-                        "src": "7083:7:3"
+                        "src": "3384:7:2"
                       }
                     ],
                     "id": 927,
                     "name": "VariableDeclaration",
-                    "src": "7083:13:3"
+                    "src": "3384:13:2"
                   }
                 ],
                 "id": 928,
                 "name": "ParameterList",
-                "src": "7040:57:3"
+                "src": "3341:57:2"
               }
             ],
             "id": 929,
             "name": "EventDefinition",
-            "src": "7013:85:3"
+            "src": "3314:85:2"
           },
           {
             "attributes": {
@@ -1420,12 +1419,12 @@
                         },
                         "id": 930,
                         "name": "ElementaryTypeName",
-                        "src": "7452:7:3"
+                        "src": "3753:7:2"
                       }
                     ],
                     "id": 931,
                     "name": "VariableDeclaration",
-                    "src": "7452:26:3"
+                    "src": "3753:26:2"
                   },
                   {
                     "attributes": {
@@ -1447,12 +1446,12 @@
                         },
                         "id": 932,
                         "name": "ElementaryTypeName",
-                        "src": "7479:7:3"
+                        "src": "3780:7:2"
                       }
                     ],
                     "id": 933,
                     "name": "VariableDeclaration",
-                    "src": "7479:30:3"
+                    "src": "3780:30:2"
                   },
                   {
                     "attributes": {
@@ -1474,12 +1473,12 @@
                         },
                         "id": 934,
                         "name": "ElementaryTypeName",
-                        "src": "7511:7:3"
+                        "src": "3812:7:2"
                       }
                     ],
                     "id": 935,
                     "name": "VariableDeclaration",
-                    "src": "7511:25:3"
+                    "src": "3812:25:2"
                   },
                   {
                     "attributes": {
@@ -1501,12 +1500,12 @@
                         },
                         "id": 936,
                         "name": "ElementaryTypeName",
-                        "src": "7538:4:3"
+                        "src": "3839:4:2"
                       }
                     ],
                     "id": 937,
                     "name": "VariableDeclaration",
-                    "src": "7538:10:3"
+                    "src": "3839:10:2"
                   },
                   {
                     "attributes": {
@@ -1528,22 +1527,22 @@
                         },
                         "id": 938,
                         "name": "ElementaryTypeName",
-                        "src": "7550:4:3"
+                        "src": "3851:4:2"
                       }
                     ],
                     "id": 939,
                     "name": "VariableDeclaration",
-                    "src": "7550:12:3"
+                    "src": "3851:12:2"
                   }
                 ],
                 "id": 940,
                 "name": "ParameterList",
-                "src": "7451:112:3"
+                "src": "3752:112:2"
               }
             ],
             "id": 941,
             "name": "EventDefinition",
-            "src": "7435:129:3"
+            "src": "3736:129:2"
           },
           {
             "attributes": {
@@ -1573,12 +1572,12 @@
                         },
                         "id": 942,
                         "name": "ElementaryTypeName",
-                        "src": "8513:7:3"
+                        "src": "4167:7:2"
                       }
                     ],
                     "id": 943,
                     "name": "VariableDeclaration",
-                    "src": "8513:25:3"
+                    "src": "4167:25:2"
                   },
                   {
                     "attributes": {
@@ -1600,12 +1599,12 @@
                         },
                         "id": 944,
                         "name": "ElementaryTypeName",
-                        "src": "8540:7:3"
+                        "src": "4194:7:2"
                       }
                     ],
                     "id": 945,
                     "name": "VariableDeclaration",
-                    "src": "8540:30:3"
+                    "src": "4194:30:2"
                   },
                   {
                     "attributes": {
@@ -1627,22 +1626,22 @@
                         },
                         "id": 946,
                         "name": "ElementaryTypeName",
-                        "src": "8572:7:3"
+                        "src": "4226:7:2"
                       }
                     ],
                     "id": 947,
                     "name": "VariableDeclaration",
-                    "src": "8572:14:3"
+                    "src": "4226:14:2"
                   }
                 ],
                 "id": 948,
                 "name": "ParameterList",
-                "src": "8512:75:3"
+                "src": "4166:75:2"
               }
             ],
             "id": 949,
             "name": "EventDefinition",
-            "src": "8488:100:3"
+            "src": "4142:100:2"
           },
           {
             "attributes": {
@@ -1672,12 +1671,12 @@
                         },
                         "id": 950,
                         "name": "ElementaryTypeName",
-                        "src": "8856:7:3"
+                        "src": "4510:7:2"
                       }
                     ],
                     "id": 951,
                     "name": "VariableDeclaration",
-                    "src": "8856:25:3"
+                    "src": "4510:25:2"
                   },
                   {
                     "attributes": {
@@ -1699,12 +1698,12 @@
                         },
                         "id": 952,
                         "name": "ElementaryTypeName",
-                        "src": "8883:7:3"
+                        "src": "4537:7:2"
                       }
                     ],
                     "id": 953,
                     "name": "VariableDeclaration",
-                    "src": "8883:30:3"
+                    "src": "4537:30:2"
                   },
                   {
                     "attributes": {
@@ -1726,22 +1725,22 @@
                         },
                         "id": 954,
                         "name": "ElementaryTypeName",
-                        "src": "8915:4:3"
+                        "src": "4569:4:2"
                       }
                     ],
                     "id": 955,
                     "name": "VariableDeclaration",
-                    "src": "8915:11:3"
+                    "src": "4569:11:2"
                   }
                 ],
                 "id": 956,
                 "name": "ParameterList",
-                "src": "8855:72:3"
+                "src": "4509:72:2"
               }
             ],
             "id": 957,
             "name": "EventDefinition",
-            "src": "8833:95:3"
+            "src": "4487:95:2"
           },
           {
             "attributes": {
@@ -1771,12 +1770,12 @@
                         },
                         "id": 958,
                         "name": "ElementaryTypeName",
-                        "src": "9216:7:3"
+                        "src": "4870:7:2"
                       }
                     ],
                     "id": 959,
                     "name": "VariableDeclaration",
-                    "src": "9216:25:3"
+                    "src": "4870:25:2"
                   },
                   {
                     "attributes": {
@@ -1798,12 +1797,12 @@
                         },
                         "id": 960,
                         "name": "ElementaryTypeName",
-                        "src": "9243:7:3"
+                        "src": "4897:7:2"
                       }
                     ],
                     "id": 961,
                     "name": "VariableDeclaration",
-                    "src": "9243:30:3"
+                    "src": "4897:30:2"
                   },
                   {
                     "attributes": {
@@ -1825,22 +1824,22 @@
                         },
                         "id": 962,
                         "name": "ElementaryTypeName",
-                        "src": "9275:4:3"
+                        "src": "4929:4:2"
                       }
                     ],
                     "id": 963,
                     "name": "VariableDeclaration",
-                    "src": "9275:15:3"
+                    "src": "4929:15:2"
                   }
                 ],
                 "id": 964,
                 "name": "ParameterList",
-                "src": "9215:76:3"
+                "src": "4869:76:2"
               }
             ],
             "id": 965,
             "name": "EventDefinition",
-            "src": "9189:103:3"
+            "src": "4843:103:2"
           },
           {
             "attributes": {
@@ -1870,12 +1869,12 @@
                         },
                         "id": 966,
                         "name": "ElementaryTypeName",
-                        "src": "9533:7:3"
+                        "src": "5187:7:2"
                       }
                     ],
                     "id": 967,
                     "name": "VariableDeclaration",
-                    "src": "9533:26:3"
+                    "src": "5187:26:2"
                   },
                   {
                     "attributes": {
@@ -1897,12 +1896,12 @@
                         },
                         "id": 968,
                         "name": "ElementaryTypeName",
-                        "src": "9560:7:3"
+                        "src": "5214:7:2"
                       }
                     ],
                     "id": 969,
                     "name": "VariableDeclaration",
-                    "src": "9560:30:3"
+                    "src": "5214:30:2"
                   },
                   {
                     "attributes": {
@@ -1924,32 +1923,32 @@
                         },
                         "id": 970,
                         "name": "ElementaryTypeName",
-                        "src": "9592:7:3"
+                        "src": "5246:7:2"
                       }
                     ],
                     "id": 971,
                     "name": "VariableDeclaration",
-                    "src": "9592:20:3"
+                    "src": "5246:20:2"
                   }
                 ],
                 "id": 972,
                 "name": "ParameterList",
-                "src": "9532:81:3"
+                "src": "5186:81:2"
               }
             ],
             "id": 973,
             "name": "EventDefinition",
-            "src": "9510:104:3"
+            "src": "5164:104:2"
           }
         ],
         "id": 974,
         "name": "ContractDefinition",
-        "src": "130:9486:3"
+        "src": "129:5141:2"
       }
     ],
     "id": 975,
     "name": "SourceUnit",
-    "src": "0:9616:3"
+    "src": "0:5270:2"
   },
   "compiler": {
     "name": "solc",
@@ -1957,5 +1956,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-01-31T22:39:32.738Z"
+  "updatedAt": "2018-02-01T17:48:00.676Z"
 }

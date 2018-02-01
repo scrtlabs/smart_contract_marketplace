@@ -1,3 +1,4 @@
+
 var utils = require("../system_node_tests/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
 var Marketplace = artifacts.require("./mocks/TestableMock.sol");
@@ -60,27 +61,55 @@ contract('Marketplace Mock', function(accounts) {
       })
     });
   });
- if(simple && system_test && true)
-  it("Should register 3 normal dataSets",()=>{
-    return Marketplace.deployed().then(instance=>{
+ // if(simple && system_test && true)
+ //  it("Should register 3 normal dataSets",()=>{
+ //    return Marketplace.deployed().then(instance=>{
       
-      toRegister = [{addr:owner1,price:price1,name:data1},
-      {addr:owner2,price:price2,name:data2},
-      {addr:owner3,price:price3,name:data3}];
+ //      toRegister = [{addr:owner1,price:price1,name:data1},
+ //      {addr:owner2,price:price2,name:data2},
+ //      {addr:owner3,price:price3,name:data3}];
 
-      registerAll(instance,toRegister).then(success=>{
-        assert.equal(success,true,"Registration failed");
+ //      registerAll(instance,toRegister).then(success=>{
+ //        assert.equal(success,true,"Registration failed");
+ //      });
+ //    });
+ //  });
+
+    it("Should register 1 data ",()=>{
+      return Marketplace.deployed().then(instance=>{
+        mp = instance;
+        return mp.register(data1, price1, owner1,{from:owner1});
+      }).then(tx=>{
       });
     });
-  });
+
+    it("Should register 2 data ",()=>{
+      return Marketplace.deployed().then(instance=>{
+        mp = instance;
+        return mp.register(data2, price2, owner2,{from:owner2});
+      }).then(tx=>{
+      });
+    });
  if(simple && system_test && true)
   it("Register (mock) expired data set",()=>{
-    
+    //function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner, bool isPunished)
+    Marketplace.deployed().then(instance=>{
+      mp = instance;
+      return instance.mockPayableProvider(dataExpiredAndPunished,
+        priceExpiredAndPunished,
+        expiredAndPunishedOwner,
+        true,
+        {from:subscriberRefund});
+    }).then(tx=>{
+            return mp.getWithdrawAmount(dataExpiredAndPunished);
+    }).then(amount=>{
+      assert.equal(amount.toNumber(),priceExpiredAndPunished/2, "prices don't match in expired withdraw.");
+    });
   });
 });
 
 
-
+// distribute tokens to accounts from the distributer account with the token instance.
 function distribute(token,distributer,accounts){
   var counter = 0;
   var len = accounts.length-1;
@@ -104,6 +133,8 @@ function distribute(token,distributer,accounts){
   });
 }
 
+// register all the providers with the marketplace instance.
+// register all the providers with the marketplace instance.
 function registerAll(marketPlace,providers){
   var counter = 0;
   var len = providers.length-1;
@@ -159,3 +190,6 @@ function printProviderInfo(info){
         console.log("isActive : " + isActive);
         console.log("isPunished : " +isPunished );
 }
+
+
+

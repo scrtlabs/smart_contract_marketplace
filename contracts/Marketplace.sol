@@ -19,6 +19,11 @@ contract Marketplace is IMarketplace,BasicMarketplace{
     returns (bool success){
         require(mProviders[_dataSourceName].isProvider);
         mProviders[_dataSourceName].isPunished = _isPunished;
+        if(_isPunished){
+            mProviders[_dataSourceName].punishTimeStamp = now;
+        }else{
+            mProviders[_dataSourceName].punishTimeStamp = 0;
+        }
         ProviderPunishStatus(mProviders[_dataSourceName].owner,_dataSourceName,_isPunished);
         success = true;
     }

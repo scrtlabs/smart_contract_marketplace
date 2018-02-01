@@ -135,7 +135,7 @@
           "type": "uint256"
         },
         {
-          "name": "isExpired",
+          "name": "isUnExpired",
           "type": "bool"
         },
         {
@@ -269,7 +269,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IBasicMarketplace{\n    /*\n    *@dev if data set owner wants to update the price for FUTURE users.\n    *@param _dataSourceName name of the data source\n    *@param _newPrice the new price\n    *@return true if updated;\n    */\n    function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool success);\n    /*\n    *@dev the ability to turn off/on a data set for FUTURE sales. Default on subscriotion is TRUE.\n    *@param _datasourceName the name of the data source.\n    *@param _isActive true = sellable , false = not sellable \n    *@return true if success.\n    */\n    function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) external returns (bool success);\n    /*\n    *@dev data providers can decide to turn off/on their offer for future requests.\n    *@param _dataSourceName the data source in context\n    *@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)\n    */\n    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive);\n    /*\n    *@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)\n    *@param _subscriber the subscriber address\n    *@param _dataSourceName the name of the data source to check against\n    *@return address - the subscriber address (double verification)\n    *@return bytes32 - the data set name (double verification)\n    *@return uint - subscription price\n    *@return uint - subscription start time\n    *@return uint - subscription end time\n    *@return bool - is subscription expired, true = expired, false = not expired\n    *@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) \n    *@return bool - isPunishedProvider , is the provider of the subscription punished\n    *@return bool - isOrder , true if the order exists, false otherwise\n    */\n    function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view \n    returns (address subscriber,\n        bytes32 dataSourceName,\n        uint price,\n        uint startTime,\n        uint endTime,\n        bool isExpired,\n        bool isPaid, \n        bool isPunishedProvider,\n        bool isOrder);\n    /*\n    *@dev get the address of the owner given a data source name. \n    *@param _dataSourceName the name of the data source\n    *@return address the owner address\n    */\n    function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner);\n    /*\n    *@dev get information regarding some data source given a name.\n    *@param _dataSourceName the data source name\n    *@return address owner - data source owner\n    *@return uint256 price - the current price of the data set \n    *@return uint256 volume - the total sum of the tokens paid since registration.\n    *@return uint256 - total counter of the subscriptions number to that data source\n    *@return bool isProvider - should always be true if registry exists\n    *@return bool isActive - true = selling, false = not selling (not active)\n    *@return bool isPunished - true if punished false otherwise\n    */\n    function getDataProviderInfo(bytes32 _dataSourceName) public view returns(\n        address owner,\n        uint256 price,\n        uint256 volume,\n        uint256 subscriptionsNum,\n        bool isProvider,\n        bool isActive,\n        bool isPunished);\n    /*\n    @dev verify that a subscriber can access data source\n    @param _subscriber the subscriber to check\n    @param _dataSourceName the data source being checked \n    @return bool true if expired, false otherwise\n    */\n    function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);\n    /*\n    *@dev get all the providers names \n    *@param bytes32[] array of all time providers \n    */\n    function getAllProviders() public view returns (bytes32[]);\n    /*********** Events ************/\n    /*\n    *@dev triggerd uppon a price change of an existing data source\n    @param editor the owner that changed the price\n    @param dataSourceName the data source that has changed\n    @param newPrice the new price.\n    */\n    event PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);\n    /*\n    *@dev triggerd upon a change in the state of a data source availablity.\n    @param editor who changed the activity state\n    @param dataSourceName which dataSource changed. \n    @param newStatus true = active, false = not active (cannot be sold)\n    */\n    event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);\n\n}",
+  "source": "pragma solidity 0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IBasicMarketplace{\n    /*\n    *@dev if data set owner wants to update the price for FUTURE users.\n    *@param _dataSourceName name of the data source\n    *@param _newPrice the new price\n    *@return true if updated;\n    */\n    function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) external returns (bool success);\n    /*\n    *@dev the ability to turn off/on a data set for FUTURE sales. Default on subscriotion is TRUE.\n    *@param _datasourceName the name of the data source.\n    *@param _isActive true = sellable , false = not sellable \n    *@return true if success.\n    */\n    function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) external returns (bool success);\n    /*\n    *@dev data providers can decide to turn off/on their offer for future requests.\n    *@param _dataSourceName the data source in context\n    *@return bool true if Active (the data source is for sale). false otherwise (data source not for sale)\n    */\n    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive);\n    /*\n    *@dev check the status of some subscriber, time is taken based on block.timestamp (UNIX)\n    *@param _subscriber the subscriber address\n    *@param _dataSourceName the name of the data source to check against\n    *@return address - the subscriber address (double verification)\n    *@return bytes32 - the data set name (double verification)\n    *@return uint - subscription price\n    *@return uint - subscription start time\n    *@return uint - subscription end time\n    *@return bool - isUnExpired if subscription is active(not expired) = true, false otherwise.\n    *@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) \n    *@return bool - isPunishedProvider , is the provider of the subscription punished\n    *@return bool - isOrder , true if the order exists, false otherwise\n    */\n    function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) public view \n    returns (address subscriber,\n        bytes32 dataSourceName,\n        uint price,\n        uint startTime,\n        uint endTime,\n        bool isUnExpired,\n        bool isPaid, \n        bool isPunishedProvider,\n        bool isOrder);\n    /*\n    *@dev get the address of the owner given a data source name. \n    *@param _dataSourceName the name of the data source\n    *@return address the owner address\n    */\n    function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner);\n    /*\n    *@dev get information regarding some data source given a name.\n    *@param _dataSourceName the data source name\n    *@return address owner - data source owner\n    *@return uint256 price - the current price of the data set \n    *@return uint256 volume - the total sum of the tokens paid since registration.\n    *@return uint256 - total counter of the subscriptions number to that data source\n    *@return bool isProvider - should always be true if registry exists\n    *@return bool isActive - true = selling, false = not selling (not active)\n    *@return bool isPunished - true if punished false otherwise\n    */\n    function getDataProviderInfo(bytes32 _dataSourceName) public view returns(\n        address owner,\n        uint256 price,\n        uint256 volume,\n        uint256 subscriptionsNum,\n        bool isProvider,\n        bool isActive,\n        bool isPunished);\n    /*\n    @dev verify that a subscriber can access data source\n    @param _subscriber the subscriber to check\n    @param _dataSourceName the data source being checked \n    @return bool true if expired, false otherwise\n    */\n    function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) public view returns (bool isExpired);\n    /*\n    *@dev get all the providers names \n    *@param bytes32[] array of all time providers \n    */\n    function getAllProviders() public view returns (bytes32[]);\n    /*********** Events ************/\n    /*\n    *@dev triggerd uppon a price change of an existing data source\n    @param editor the owner that changed the price\n    @param dataSourceName the data source that has changed\n    @param newPrice the new price.\n    */\n    event PriceUpdate(address indexed editor, bytes32 indexed dataSourceName, uint256 newPrice);\n    /*\n    *@dev triggerd upon a change in the state of a data source availablity.\n    @param editor who changed the activity state\n    @param dataSourceName which dataSource changed. \n    @param newStatus true = active, false = not active (cannot be sold)\n    */\n    event ActivityUpdate(address indexed editor, bytes32 indexed dataSourceName, bool newStatus);\n\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IBasicMarketplace.sol",
   "ast": {
     "attributes": {
@@ -285,14 +285,13 @@
         "attributes": {
           "literals": [
             "solidity",
-            "^",
             "0.4",
             ".18"
           ]
         },
         "id": 739,
         "name": "PragmaDirective",
-        "src": "0:24:2"
+        "src": "0:23:1"
       },
       {
         "attributes": {
@@ -350,12 +349,12 @@
                         },
                         "id": 740,
                         "name": "ElementaryTypeName",
-                        "src": "397:7:2"
+                        "src": "396:7:1"
                       }
                     ],
                     "id": 741,
                     "name": "VariableDeclaration",
-                    "src": "397:23:2"
+                    "src": "396:23:1"
                   },
                   {
                     "attributes": {
@@ -376,17 +375,17 @@
                         },
                         "id": 742,
                         "name": "ElementaryTypeName",
-                        "src": "422:7:2"
+                        "src": "421:7:1"
                       }
                     ],
                     "id": 743,
                     "name": "VariableDeclaration",
-                    "src": "422:17:2"
+                    "src": "421:17:1"
                   }
                 ],
                 "id": 744,
                 "name": "ParameterList",
-                "src": "396:44:2"
+                "src": "395:44:1"
               },
               {
                 "children": [
@@ -409,22 +408,22 @@
                         },
                         "id": 745,
                         "name": "ElementaryTypeName",
-                        "src": "459:4:2"
+                        "src": "458:4:1"
                       }
                     ],
                     "id": 746,
                     "name": "VariableDeclaration",
-                    "src": "459:12:2"
+                    "src": "458:12:1"
                   }
                 ],
                 "id": 747,
                 "name": "ParameterList",
-                "src": "458:14:2"
+                "src": "457:14:1"
               }
             ],
             "id": 748,
             "name": "FunctionDefinition",
-            "src": "366:107:2"
+            "src": "365:107:1"
           },
           {
             "attributes": {
@@ -464,12 +463,12 @@
                         },
                         "id": 749,
                         "name": "ElementaryTypeName",
-                        "src": "780:7:2"
+                        "src": "779:7:1"
                       }
                     ],
                     "id": 750,
                     "name": "VariableDeclaration",
-                    "src": "780:23:2"
+                    "src": "779:23:1"
                   },
                   {
                     "attributes": {
@@ -490,17 +489,17 @@
                         },
                         "id": 751,
                         "name": "ElementaryTypeName",
-                        "src": "804:4:2"
+                        "src": "803:4:1"
                       }
                     ],
                     "id": 752,
                     "name": "VariableDeclaration",
-                    "src": "804:14:2"
+                    "src": "803:14:1"
                   }
                 ],
                 "id": 753,
                 "name": "ParameterList",
-                "src": "779:40:2"
+                "src": "778:40:1"
               },
               {
                 "children": [
@@ -523,22 +522,22 @@
                         },
                         "id": 754,
                         "name": "ElementaryTypeName",
-                        "src": "838:4:2"
+                        "src": "837:4:1"
                       }
                     ],
                     "id": 755,
                     "name": "VariableDeclaration",
-                    "src": "838:12:2"
+                    "src": "837:12:1"
                   }
                 ],
                 "id": 756,
                 "name": "ParameterList",
-                "src": "837:14:2"
+                "src": "836:14:1"
               }
             ],
             "id": 757,
             "name": "FunctionDefinition",
-            "src": "740:112:2"
+            "src": "739:112:1"
           },
           {
             "attributes": {
@@ -578,17 +577,17 @@
                         },
                         "id": 758,
                         "name": "ElementaryTypeName",
-                        "src": "1145:7:2"
+                        "src": "1144:7:1"
                       }
                     ],
                     "id": 759,
                     "name": "VariableDeclaration",
-                    "src": "1145:23:2"
+                    "src": "1144:23:1"
                   }
                 ],
                 "id": 760,
                 "name": "ParameterList",
-                "src": "1144:25:2"
+                "src": "1143:25:1"
               },
               {
                 "children": [
@@ -611,22 +610,22 @@
                         },
                         "id": 761,
                         "name": "ElementaryTypeName",
-                        "src": "1193:4:2"
+                        "src": "1192:4:1"
                       }
                     ],
                     "id": 762,
                     "name": "VariableDeclaration",
-                    "src": "1193:13:2"
+                    "src": "1192:13:1"
                   }
                 ],
                 "id": 763,
                 "name": "ParameterList",
-                "src": "1192:15:2"
+                "src": "1191:15:1"
               }
             ],
             "id": 764,
             "name": "FunctionDefinition",
-            "src": "1117:91:2"
+            "src": "1116:91:1"
           },
           {
             "attributes": {
@@ -666,12 +665,12 @@
                         },
                         "id": 765,
                         "name": "ElementaryTypeName",
-                        "src": "2074:7:2"
+                        "src": "2088:7:1"
                       }
                     ],
                     "id": 766,
                     "name": "VariableDeclaration",
-                    "src": "2074:19:2"
+                    "src": "2088:19:1"
                   },
                   {
                     "attributes": {
@@ -692,17 +691,17 @@
                         },
                         "id": 767,
                         "name": "ElementaryTypeName",
-                        "src": "2095:7:2"
+                        "src": "2109:7:1"
                       }
                     ],
                     "id": 768,
                     "name": "VariableDeclaration",
-                    "src": "2095:23:2"
+                    "src": "2109:23:1"
                   }
                 ],
                 "id": 769,
                 "name": "ParameterList",
-                "src": "2073:46:2"
+                "src": "2087:46:1"
               },
               {
                 "children": [
@@ -725,12 +724,12 @@
                         },
                         "id": 770,
                         "name": "ElementaryTypeName",
-                        "src": "2146:7:2"
+                        "src": "2160:7:1"
                       }
                     ],
                     "id": 771,
                     "name": "VariableDeclaration",
-                    "src": "2146:18:2"
+                    "src": "2160:18:1"
                   },
                   {
                     "attributes": {
@@ -751,12 +750,12 @@
                         },
                         "id": 772,
                         "name": "ElementaryTypeName",
-                        "src": "2174:7:2"
+                        "src": "2188:7:1"
                       }
                     ],
                     "id": 773,
                     "name": "VariableDeclaration",
-                    "src": "2174:22:2"
+                    "src": "2188:22:1"
                   },
                   {
                     "attributes": {
@@ -777,12 +776,12 @@
                         },
                         "id": 774,
                         "name": "ElementaryTypeName",
-                        "src": "2206:4:2"
+                        "src": "2220:4:1"
                       }
                     ],
                     "id": 775,
                     "name": "VariableDeclaration",
-                    "src": "2206:10:2"
+                    "src": "2220:10:1"
                   },
                   {
                     "attributes": {
@@ -803,12 +802,12 @@
                         },
                         "id": 776,
                         "name": "ElementaryTypeName",
-                        "src": "2226:4:2"
+                        "src": "2240:4:1"
                       }
                     ],
                     "id": 777,
                     "name": "VariableDeclaration",
-                    "src": "2226:14:2"
+                    "src": "2240:14:1"
                   },
                   {
                     "attributes": {
@@ -829,17 +828,17 @@
                         },
                         "id": 778,
                         "name": "ElementaryTypeName",
-                        "src": "2250:4:2"
+                        "src": "2264:4:1"
                       }
                     ],
                     "id": 779,
                     "name": "VariableDeclaration",
-                    "src": "2250:12:2"
+                    "src": "2264:12:1"
                   },
                   {
                     "attributes": {
                       "constant": false,
-                      "name": "isExpired",
+                      "name": "isUnExpired",
                       "scope": 789,
                       "stateVariable": false,
                       "storageLocation": "default",
@@ -855,12 +854,12 @@
                         },
                         "id": 780,
                         "name": "ElementaryTypeName",
-                        "src": "2272:4:2"
+                        "src": "2286:4:1"
                       }
                     ],
                     "id": 781,
                     "name": "VariableDeclaration",
-                    "src": "2272:14:2"
+                    "src": "2286:16:1"
                   },
                   {
                     "attributes": {
@@ -881,12 +880,12 @@
                         },
                         "id": 782,
                         "name": "ElementaryTypeName",
-                        "src": "2296:4:2"
+                        "src": "2312:4:1"
                       }
                     ],
                     "id": 783,
                     "name": "VariableDeclaration",
-                    "src": "2296:11:2"
+                    "src": "2312:11:1"
                   },
                   {
                     "attributes": {
@@ -907,12 +906,12 @@
                         },
                         "id": 784,
                         "name": "ElementaryTypeName",
-                        "src": "2318:4:2"
+                        "src": "2334:4:1"
                       }
                     ],
                     "id": 785,
                     "name": "VariableDeclaration",
-                    "src": "2318:23:2"
+                    "src": "2334:23:1"
                   },
                   {
                     "attributes": {
@@ -933,22 +932,22 @@
                         },
                         "id": 786,
                         "name": "ElementaryTypeName",
-                        "src": "2351:4:2"
+                        "src": "2367:4:1"
                       }
                     ],
                     "id": 787,
                     "name": "VariableDeclaration",
-                    "src": "2351:12:2"
+                    "src": "2367:12:1"
                   }
                 ],
                 "id": 788,
                 "name": "ParameterList",
-                "src": "2145:219:2"
+                "src": "2159:221:1"
               }
             ],
             "id": 789,
             "name": "FunctionDefinition",
-            "src": "2040:325:2"
+            "src": "2054:327:1"
           },
           {
             "attributes": {
@@ -988,17 +987,17 @@
                         },
                         "id": 790,
                         "name": "ElementaryTypeName",
-                        "src": "2571:7:2"
+                        "src": "2587:7:1"
                       }
                     ],
                     "id": 791,
                     "name": "VariableDeclaration",
-                    "src": "2571:23:2"
+                    "src": "2587:23:1"
                   }
                 ],
                 "id": 792,
                 "name": "ParameterList",
-                "src": "2570:25:2"
+                "src": "2586:25:1"
               },
               {
                 "children": [
@@ -1021,22 +1020,22 @@
                         },
                         "id": 793,
                         "name": "ElementaryTypeName",
-                        "src": "2616:7:2"
+                        "src": "2632:7:1"
                       }
                     ],
                     "id": 794,
                     "name": "VariableDeclaration",
-                    "src": "2616:13:2"
+                    "src": "2632:13:1"
                   }
                 ],
                 "id": 795,
                 "name": "ParameterList",
-                "src": "2615:15:2"
+                "src": "2631:15:1"
               }
             ],
             "id": 796,
             "name": "FunctionDefinition",
-            "src": "2545:86:2"
+            "src": "2561:86:1"
           },
           {
             "attributes": {
@@ -1076,17 +1075,17 @@
                         },
                         "id": 797,
                         "name": "ElementaryTypeName",
-                        "src": "3288:7:2"
+                        "src": "3304:7:1"
                       }
                     ],
                     "id": 798,
                     "name": "VariableDeclaration",
-                    "src": "3288:23:2"
+                    "src": "3304:23:1"
                   }
                 ],
                 "id": 799,
                 "name": "ParameterList",
-                "src": "3287:25:2"
+                "src": "3303:25:1"
               },
               {
                 "children": [
@@ -1109,12 +1108,12 @@
                         },
                         "id": 800,
                         "name": "ElementaryTypeName",
-                        "src": "3342:7:2"
+                        "src": "3358:7:1"
                       }
                     ],
                     "id": 801,
                     "name": "VariableDeclaration",
-                    "src": "3342:13:2"
+                    "src": "3358:13:1"
                   },
                   {
                     "attributes": {
@@ -1135,12 +1134,12 @@
                         },
                         "id": 802,
                         "name": "ElementaryTypeName",
-                        "src": "3365:7:2"
+                        "src": "3381:7:1"
                       }
                     ],
                     "id": 803,
                     "name": "VariableDeclaration",
-                    "src": "3365:13:2"
+                    "src": "3381:13:1"
                   },
                   {
                     "attributes": {
@@ -1161,12 +1160,12 @@
                         },
                         "id": 804,
                         "name": "ElementaryTypeName",
-                        "src": "3388:7:2"
+                        "src": "3404:7:1"
                       }
                     ],
                     "id": 805,
                     "name": "VariableDeclaration",
-                    "src": "3388:14:2"
+                    "src": "3404:14:1"
                   },
                   {
                     "attributes": {
@@ -1187,12 +1186,12 @@
                         },
                         "id": 806,
                         "name": "ElementaryTypeName",
-                        "src": "3412:7:2"
+                        "src": "3428:7:1"
                       }
                     ],
                     "id": 807,
                     "name": "VariableDeclaration",
-                    "src": "3412:24:2"
+                    "src": "3428:24:1"
                   },
                   {
                     "attributes": {
@@ -1213,12 +1212,12 @@
                         },
                         "id": 808,
                         "name": "ElementaryTypeName",
-                        "src": "3446:4:2"
+                        "src": "3462:4:1"
                       }
                     ],
                     "id": 809,
                     "name": "VariableDeclaration",
-                    "src": "3446:15:2"
+                    "src": "3462:15:1"
                   },
                   {
                     "attributes": {
@@ -1239,12 +1238,12 @@
                         },
                         "id": 810,
                         "name": "ElementaryTypeName",
-                        "src": "3471:4:2"
+                        "src": "3487:4:1"
                       }
                     ],
                     "id": 811,
                     "name": "VariableDeclaration",
-                    "src": "3471:13:2"
+                    "src": "3487:13:1"
                   },
                   {
                     "attributes": {
@@ -1265,22 +1264,22 @@
                         },
                         "id": 812,
                         "name": "ElementaryTypeName",
-                        "src": "3494:4:2"
+                        "src": "3510:4:1"
                       }
                     ],
                     "id": 813,
                     "name": "VariableDeclaration",
-                    "src": "3494:15:2"
+                    "src": "3510:15:1"
                   }
                 ],
                 "id": 814,
                 "name": "ParameterList",
-                "src": "3332:178:2"
+                "src": "3348:178:1"
               }
             ],
             "id": 815,
             "name": "FunctionDefinition",
-            "src": "3259:252:2"
+            "src": "3275:252:1"
           },
           {
             "attributes": {
@@ -1320,12 +1319,12 @@
                         },
                         "id": 816,
                         "name": "ElementaryTypeName",
-                        "src": "3773:7:2"
+                        "src": "3789:7:1"
                       }
                     ],
                     "id": 817,
                     "name": "VariableDeclaration",
-                    "src": "3773:19:2"
+                    "src": "3789:19:1"
                   },
                   {
                     "attributes": {
@@ -1346,17 +1345,17 @@
                         },
                         "id": 818,
                         "name": "ElementaryTypeName",
-                        "src": "3794:7:2"
+                        "src": "3810:7:1"
                       }
                     ],
                     "id": 819,
                     "name": "VariableDeclaration",
-                    "src": "3794:23:2"
+                    "src": "3810:23:1"
                   }
                 ],
                 "id": 820,
                 "name": "ParameterList",
-                "src": "3772:46:2"
+                "src": "3788:46:1"
               },
               {
                 "children": [
@@ -1379,22 +1378,22 @@
                         },
                         "id": 821,
                         "name": "ElementaryTypeName",
-                        "src": "3840:4:2"
+                        "src": "3856:4:1"
                       }
                     ],
                     "id": 822,
                     "name": "VariableDeclaration",
-                    "src": "3840:14:2"
+                    "src": "3856:14:1"
                   }
                 ],
                 "id": 823,
                 "name": "ParameterList",
-                "src": "3839:16:2"
+                "src": "3855:16:1"
               }
             ],
             "id": 824,
             "name": "FunctionDefinition",
-            "src": "3742:114:2"
+            "src": "3758:114:1"
           },
           {
             "attributes": {
@@ -1422,7 +1421,7 @@
                 "children": [],
                 "id": 825,
                 "name": "ParameterList",
-                "src": "3989:2:2"
+                "src": "4005:2:1"
               },
               {
                 "children": [
@@ -1451,27 +1450,27 @@
                             },
                             "id": 826,
                             "name": "ElementaryTypeName",
-                            "src": "4013:7:2"
+                            "src": "4029:7:1"
                           }
                         ],
                         "id": 827,
                         "name": "ArrayTypeName",
-                        "src": "4013:9:2"
+                        "src": "4029:9:1"
                       }
                     ],
                     "id": 828,
                     "name": "VariableDeclaration",
-                    "src": "4013:9:2"
+                    "src": "4029:9:1"
                   }
                 ],
                 "id": 829,
                 "name": "ParameterList",
-                "src": "4012:11:2"
+                "src": "4028:11:1"
               }
             ],
             "id": 830,
             "name": "FunctionDefinition",
-            "src": "3965:59:2"
+            "src": "3981:59:1"
           },
           {
             "attributes": {
@@ -1501,12 +1500,12 @@
                         },
                         "id": 831,
                         "name": "ElementaryTypeName",
-                        "src": "4311:7:2"
+                        "src": "4327:7:1"
                       }
                     ],
                     "id": 832,
                     "name": "VariableDeclaration",
-                    "src": "4311:22:2"
+                    "src": "4327:22:1"
                   },
                   {
                     "attributes": {
@@ -1528,12 +1527,12 @@
                         },
                         "id": 833,
                         "name": "ElementaryTypeName",
-                        "src": "4335:7:2"
+                        "src": "4351:7:1"
                       }
                     ],
                     "id": 834,
                     "name": "VariableDeclaration",
-                    "src": "4335:30:2"
+                    "src": "4351:30:1"
                   },
                   {
                     "attributes": {
@@ -1555,22 +1554,22 @@
                         },
                         "id": 835,
                         "name": "ElementaryTypeName",
-                        "src": "4367:7:2"
+                        "src": "4383:7:1"
                       }
                     ],
                     "id": 836,
                     "name": "VariableDeclaration",
-                    "src": "4367:16:2"
+                    "src": "4383:16:1"
                   }
                 ],
                 "id": 837,
                 "name": "ParameterList",
-                "src": "4310:74:2"
+                "src": "4326:74:1"
               }
             ],
             "id": 838,
             "name": "EventDefinition",
-            "src": "4293:92:2"
+            "src": "4309:92:1"
           },
           {
             "attributes": {
@@ -1600,12 +1599,12 @@
                         },
                         "id": 839,
                         "name": "ElementaryTypeName",
-                        "src": "4675:7:2"
+                        "src": "4691:7:1"
                       }
                     ],
                     "id": 840,
                     "name": "VariableDeclaration",
-                    "src": "4675:22:2"
+                    "src": "4691:22:1"
                   },
                   {
                     "attributes": {
@@ -1627,12 +1626,12 @@
                         },
                         "id": 841,
                         "name": "ElementaryTypeName",
-                        "src": "4699:7:2"
+                        "src": "4715:7:1"
                       }
                     ],
                     "id": 842,
                     "name": "VariableDeclaration",
-                    "src": "4699:30:2"
+                    "src": "4715:30:1"
                   },
                   {
                     "attributes": {
@@ -1654,32 +1653,32 @@
                         },
                         "id": 843,
                         "name": "ElementaryTypeName",
-                        "src": "4731:4:2"
+                        "src": "4747:4:1"
                       }
                     ],
                     "id": 844,
                     "name": "VariableDeclaration",
-                    "src": "4731:14:2"
+                    "src": "4747:14:1"
                   }
                 ],
                 "id": 845,
                 "name": "ParameterList",
-                "src": "4674:72:2"
+                "src": "4690:72:1"
               }
             ],
             "id": 846,
             "name": "EventDefinition",
-            "src": "4654:93:2"
+            "src": "4670:93:1"
           }
         ],
         "id": 847,
         "name": "ContractDefinition",
-        "src": "130:4620:2"
+        "src": "129:4637:1"
       }
     ],
     "id": 848,
     "name": "SourceUnit",
-    "src": "0:4750:2"
+    "src": "0:4766:1"
   },
   "compiler": {
     "name": "solc",
@@ -1687,5 +1686,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-01-31T22:39:32.737Z"
+  "updatedAt": "2018-02-01T17:48:00.672Z"
 }

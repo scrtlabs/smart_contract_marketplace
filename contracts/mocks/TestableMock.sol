@@ -46,29 +46,8 @@ contract TestableMock is Marketplace{
         mProviders[_dataSourceName].subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum.add(1);
         return true;
     }
-    // function mock_add_provider_subscriber(bytes32 _dataSourceName, uint _price, bool _isPunished, uint relativePunishtime)public 
-    // uniqueDataName(_dataSourceName)
-    // validPrice(_price)
-    // returns (bool success){
-    //     require(_dataOwner != address(0));
-    //     mProviders[_dataSourceName].owner = _dataOwner;
-    //     mProviders[_dataSourceName].volume = 0;
-    //     mProviders[_dataSourceName].subscriptionsNum = 0;
-    //     mProviders[_dataSourceName].name = _dataSourceName;
-    //     mProviders[_dataSourceName].price = _price;
-    //     mProviders[_dataSourceName].isPunished = _isPunished;
-    //     if(isPunished){
-    //     	mProviders[_dataSourceName].punishTimeStamp = 0;
-    //     }else{
-    //     	mProviders[_dataSourceName].punishTimeStamp = 0;
-    //     }
-    //     mProviders[_dataSourceName].isProvider = true;
-    //     mProviders[_dataSourceName].isActive = true;
-    //     mProviders[_dataSourceName].nextProvider = "";
-    //     mProviders[mCurrent].nextProvider = _dataSourceName;
-    //     mCurrent = mProviders[_dataSourceName].name;
-    //     mProvidersSize = mProvidersSize.add(1);
-    //     Registered(_dataOwner,_dataSourceName,_price,true);
-    //     success =  true;
-    // }
 }
+
+
+
+
