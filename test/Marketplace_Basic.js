@@ -1,6 +1,8 @@
 var utils = require("../system_node_tests/utils");
-var Marketplace = artifacts.require("./Marketplace.sol");
+//var Marketplace = artifacts.require("./Marketplace.sol");
+var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
+
 
 const simple = true;
 const complicated = true;

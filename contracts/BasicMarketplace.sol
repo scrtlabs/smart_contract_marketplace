@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.18;
 
 import "./zeppelin-solidity/SafeMath.sol";
 import "./zeppelin-solidity/Ownable.sol";
@@ -45,10 +45,10 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         bytes32 nextProvider;
     }
     // pointers to linked list of Providers
-    bytes32 mBegin; 
-    bytes32 mCurrent;
+    bytes32 public mBegin; 
+    bytes32 public mCurrent;
     // number of providers
-    uint mProvidersSize;
+    uint public mProvidersSize;
 	// Enigma Token
 	IERC20 public mToken;
 	// Fixed time defined (unixTimeStamp)

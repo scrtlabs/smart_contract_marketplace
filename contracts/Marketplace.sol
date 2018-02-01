@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.18;
 
 
 import "./IMarketplace.sol";
@@ -22,40 +22,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         ProviderPunishStatus(mProviders[_dataSourceName].owner,_dataSourceName,_isPunished);
         success = true;
     }
-    // mock temp func
-    function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner, bool isPunished)
-    public returns(bool){
-        // add mock provider 
-        mProviders[_dataSourceName].owner = _dataOwner;
-        mProviders[_dataSourceName].volume = 0;
-        mProviders[_dataSourceName].subscriptionsNum = 0;
-        mProviders[_dataSourceName].name = _dataSourceName;
-        mProviders[_dataSourceName].price = _price;
-        mProviders[_dataSourceName].isPunished = isPunished;
-        mProviders[_dataSourceName].punishTimeStamp = now/2 - FIXED_SUBSCRIPTION_PERIOD/2;
-        mProviders[_dataSourceName].isProvider = true;
-        mProviders[_dataSourceName].isActive = true;
-        mProviders[_dataSourceName].nextProvider = "";
-        mProviders[mCurrent].nextProvider = _dataSourceName;
-        mCurrent = mProviders[_dataSourceName].name;
-        mProvidersSize = mProvidersSize.add(1);
-        // add order 
-            mOrders[_dataSourceName].push(Order({
-            dataSourceName : _dataSourceName,
-            subscriber : msg.sender,
-            provider : mProviders[_dataSourceName].owner,
-            price : mProviders[_dataSourceName].price,
-            startTime : now/2 - FIXED_SUBSCRIPTION_PERIOD,
-            endTime : now/2,
-            isPaid : false,
-            isOrder : true,
-            isRefundPaid : false
-            }));
-        // update provider data 
-        mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
-        mProviders[_dataSourceName].subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum.add(1);
-        return true;
-    }
+
     function refundSubscriber(bytes32 _dataSourceName) 
     public 
     returns
@@ -202,7 +169,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
     function handleOrderRefundCalc(Order order) internal returns(uint256 refundAmount){
         refundAmount = 0;
         if(!order.isRefundPaid){ //order not paid 
-            if(mProviders[order.dataSourceName].isPunished){
+            if(mProviders[order.dataSourceName].isPunished){ // provider is punished
                 if(mProviders[order.dataSourceName].punishTimeStamp > order.startTime && mProviders[order.dataSourceName].punishTimeStamp < order.endTime){ // punished before the subscription is expired
                    refundAmount = order.price.sub(calcRelativeWithdraw(order)); // price - withdrawPrice
                 }
@@ -211,6 +178,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         return refundAmount;
     }
     function calcRelativeWithdraw(Order order) internal view returns(uint256 relativeAmount){
+        require(mProviders[order.dataSourceName].isPunished);
          // (punishTime- startTime) * PRICE / (endTime - startTime);
         uint256 price = order.price;
         uint256 a = (mProviders[order.dataSourceName].punishTimeStamp.sub(order.startTime)).mul(price);
