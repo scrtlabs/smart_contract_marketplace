@@ -4,7 +4,7 @@ var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
 
-const simple = true;
+const simple = false;
 const complicated = true;
 const subscriptions = true;
 const mock = true;
