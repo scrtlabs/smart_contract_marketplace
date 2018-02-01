@@ -96,7 +96,7 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         uint price,
         uint startTime,
         uint endTime,
-        bool isExpired,
+        bool isUnExpired,
         bool isPaid, 
         bool isPunishedProvider,
         bool isOrder){
@@ -110,7 +110,7 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
                 price = mOrders[_dataSourceName][i].price;
                 startTime = mOrders[_dataSourceName][i].startTime;
                 endTime = mOrders[_dataSourceName][i].endTime;
-                isExpired = isExpiredSubscription(subscriber,_dataSourceName);
+                isUnExpired = !isExpiredSubscription(subscriber,_dataSourceName);
                 isPaid = mOrders[_dataSourceName][i].isPaid;
                 isPunishedProvider = mProviders[_dataSourceName].isPunished;
                 isOrder = mOrders[_dataSourceName][i].isOrder;
@@ -121,7 +121,7 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
                 break;
             }
         }
-        return (subscriber,_dataSourceName,price,startTime,endTime,isExpired,isPaid,isPunishedProvider,isOrder);
+        return (subscriber,_dataSourceName,price,startTime,endTime,isUnExpired,isPaid,isPunishedProvider,isOrder);
     }
 
     function getAllProviders() public view returns (bytes32[]){

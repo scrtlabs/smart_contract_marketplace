@@ -78,7 +78,7 @@ if(simple && complicated && true)
   		assert.equal(subscriber1,info[0]," wrong subscriber")
   		assert.equal(dataSet1,utils.toAscii(info[1]),"wrong data set name");
   		assert.equal(price1,info[2].toNumber(),"wrong price");
-  		assert.equal(false,info[5],"wrong isExpired");
+  		assert.equal(true,info[5],"wrong isUnExpired");
   		assert.equal(false,info[6],"wrong isPaids");
   		assert.equal(false,info[7],"wrong isPunished");
   		assert.equal(true,info[8],"wrong isOrder");

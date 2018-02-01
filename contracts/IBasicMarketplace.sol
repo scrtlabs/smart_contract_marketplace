@@ -34,7 +34,7 @@ contract IBasicMarketplace{
     *@return uint - subscription price
     *@return uint - subscription start time
     *@return uint - subscription end time
-    *@return bool - is subscription expired, true = expired, false = not expired
+    *@return bool - isUnExpired if subscription is active(not expired) = true, false otherwise.
     *@return bool - isPaid , did the subscriber pay already for the subscription (to the Data provider) 
     *@return bool - isPunishedProvider , is the provider of the subscription punished
     *@return bool - isOrder , true if the order exists, false otherwise
@@ -45,7 +45,7 @@ contract IBasicMarketplace{
         uint price,
         uint startTime,
         uint endTime,
-        bool isExpired,
+        bool isUnExpired,
         bool isPaid, 
         bool isPunishedProvider,
         bool isOrder);

@@ -14,26 +14,30 @@ contract('Marketplace Mock', function(accounts) {
  const data1 = "Data1";
  const price1 = 12000;
  // provider 2
- const owner2 = accounts[2];
+ const owner2 = accounts[1];
  const data2 = "Data2";
  const price2 = 25000;
  // provider 3
+ const owner3 = accounts[2];
+ const data3 = "Data3";
+ const price3 = 10000;
+ // provider 4
  const expiredOwner = accounts[3];
  const dataExpired = "Expired";
  const priceExpired = 11000;
- // provider 4
+ // provider 5
  const expiredAndPunishedOwner = accounts[4];
  const dataExpiredAndPunished = "ExpiredAndPunished";
- const priceExpiredAndPunished= 60000;
+ const priceExpiredAndPunished= 100000;
  // subscriber1 
  const subscriber1 = accounts[5]; 
- const initialBal1 = priceExpiredAndPunished *2;
+ const initialBal1 = priceExpiredAndPunished *3;
  // subscriber2 
  const subscriber2 = accounts[6];
- const initialBal2 = priceExpiredAndPunished *2
+ const initialBal2 = priceExpiredAndPunished *3;
  // subscriber3 
  const subscriberRefund = accounts[7];
- const initialBalRefund = priceExpiredAndPunished *2
+ const initialBalRefund = priceExpiredAndPunished *3;
  
  if(simple && true)
   it("Should get the correct Marketplace version",()=>{
@@ -57,13 +61,21 @@ contract('Marketplace Mock', function(accounts) {
     });
   });
  if(simple && system_test && true)
-  it("Should register 2 normal dataSets",()=>{
+  it("Should register 3 normal dataSets",()=>{
     return Marketplace.deployed().then(instance=>{
-      toRegister = [{addr:owner1,price:price1,name:data1},{addr:owner2,price:price2,name:data2}];
+      
+      toRegister = [{addr:owner1,price:price1,name:data1},
+      {addr:owner2,price:price2,name:data2},
+      {addr:owner3,price:price3,name:data3}];
+
       registerAll(instance,toRegister).then(success=>{
         assert.equal(success,true,"Registration failed");
       });
     });
+  });
+ if(simple && system_test && true)
+  it("Register (mock) expired data set",()=>{
+    
   });
 });
 
