@@ -16,11 +16,11 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
  // provider 1
  const owner1 = accounts[1];
  const data1 = "Data1";
- const price1 = 12000;
+ const price1 = 5000;
  // provider 2
  const owner2 = accounts[1];
  const data2 = "Data2";
- const price2 = 25000;
+ const price2 = 2000;
  // provider 3
  const owner3 = accounts[2];
  const data3 = "Data3";
@@ -144,12 +144,96 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       });
     });
   });
-   
-  
+
+  if(simple && system_test && true)
+    it("Should register 2 subscribers to 3 data setes",()=>{
+      return EnigmaToken.deployed().then(instance=>{
+        enigma = instance;
+        return Marketplace.deployed().then(instance=>{
+          mp = instance;
+          return enigma.approve(mp.address,price1,{from:subscriber1});
+        }).then(tx=>{
+          return enigma.increaseApproval(mp.address,price2,{from:subscriber1});
+        }).then(tx=>{
+          return enigma.approve(mp.address,price3,{from:subscriber2});
+        }).then(tx=>{
+          return enigma.allowance(subscriber1,mp.address);
+        }).then(allowed=>{
+          assert.equal(allowed.toNumber(),price1+price2,"allowed is not equal to price");
+          return enigma.allowance(subscriber2,mp.address);
+        }).then(allowed=>{
+          assert.equal(allowed.toNumber(),price3,"allowed is not equal to price");
+          return mp.subscribe(data1,{from:subscriber1});
+        }).then(tx=>{
+          return mp.subscribe(data2,{from:subscriber1});
+        }).then(tx=>{
+          return mp.subscribe(data3,{from:subscriber2});
+        }).then(tx=>{
+          return mp.checkAddressSubscription.call(subscriber1,data1);
+        }).then(subscription=>{
+          var s1 = parseSubscription(subscription);
+          var equal = isEqualSubscriptions(s1,{susbcriber:subscriber1,dataName:data1,price:price1,isUnExpired:true,isPaid:false,isPunishedProvider:false,isOrder:true});
+          assert.equal(equal,true,"Subscription1 is not equal");
+          return mp.checkAddressSubscription.call(subscriber1,data2);
+        }).then(subscription=>{
+          var s2 = parseSubscription(subscription);
+          var equal = isEqualSubscriptions(s2,{susbcriber:subscriber1,dataName:data2,price:price2,isUnExpired:true,isPaid:false,isPunishedProvider:false,isOrder:true});
+          assert.equal(equal,true,"Subscription2 is not equal");
+          return mp.checkAddressSubscription.call(subscriber2,data3);
+        }).then(subscription=>{
+          var s3 = parseSubscription(subscription);
+          var equal = isEqualSubscriptions(s3,{susbcriber:subscriber2,dataName:data3,price:price3,isUnExpired:true,isPaid:false,isPunishedProvider:false,isOrder:true});
+          assert.equal(equal,true,"Subscription3 is not equal");
+        });
+      });
+    });
+
+  if(simple && system_test && true)
+    it("Should try subscribing to an expired and punished data set and fail",async function(){
+      let marketPlace = await Marketplace.deployed();
+      try{
+        await marketPlace.subscribe(expiredAndPunishedOwner,{from:subscriber3});
+      } catch(e){
+        return true;
+      }
+    });
+  //
 });
 
-
-
+function parseSubscription(info){
+  var normal = {};
+  normal.susbcriber = info[0];
+  normal.dataName = utils.toAscii(info[1]);
+  normal.price = info[2].toNumber();
+  normal.startTime = info[3].toNumber();
+  normal.endTime = info[4].toNumber();
+  normal.isUnExpired = info[5];
+  normal.isPaid = info[6];
+  normal.isPunishedProvider = info[7];
+  normal.isOrder = info[8];
+  return normal;
+}
+function isEqualSubscriptions(sub1,sub2){
+  return sub1.subscriber == sub2.subscriber &&
+  sub1.dataName ==sub2.dataName &&
+  sub1.price ==sub2.price &&
+  sub1.isUnExpired==sub2.isUnExpired &&
+  sub1.isPaid==sub2.isPaid &&
+  sub1.isPunishedProvider==sub2.isPunishedProvider &&
+  sub1.isOrder ==sub2.isOrder;
+}
+function printSubscriptionInfo(info){
+  var s = parseSubscription(info);
+  console.log("susbcriber : " +s.susbcriber );
+  console.log("dataName : " +s.dataName );
+  console.log("price : " + s.price);
+  console.log("startTime : " + s.startTime);
+  console.log("endTime : " +s.endTime );
+  console.log("isUnExpired : " + s.isUnExpired);
+  console.log("isPaid : " + s.isPaid);
+  console.log("isPunishedProvider : " + s.isPunishedProvider);
+  console.log("isOrder : " + s.isOrder);
+}
 function printProviderInfo(info){
         var owner = info[0];
         var price = info[1].toNumber();
