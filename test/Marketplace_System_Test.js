@@ -134,7 +134,6 @@ function distribute(token,distributer,accounts){
 }
 
 // register all the providers with the marketplace instance.
-// register all the providers with the marketplace instance.
 function registerAll(marketPlace,providers){
   var counter = 0;
   var len = providers.length-1;
