@@ -193,11 +193,55 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       let marketPlace = await Marketplace.deployed();
       try{
         await marketPlace.subscribe(expiredAndPunishedOwner,{from:subscriber3});
-      } catch(e){ //
+        assert.equal(false,true,"not error thrown");
+      } catch(e){ 
         return true;
       }
     });
-  //
+  if(simple && system_test && true)
+    it("Should test for an expired subscription",async function(){
+      let marketPlace = await Marketplace.deployed();
+      let subsInfo = await marketPlace.checkAddressSubscription.call(subscriberRefund,dataExpiredAndPunished);
+      let isExpired = await marketPlace.isExpiredSubscription.call(subscriberRefund,dataExpiredAndPunished);
+      let isValid = parseSubscription(subsInfo).isUnExpired;
+      assert.equal(isExpired, !isValid , "functions are not persistent");
+      assert.equal(isExpired,true, "subscription is not expired");
+    })
+
+  if(simple && system_test && true)
+    it("Should try withdraw un-expired order",async function(){
+      let marketPlace = await Marketplace.deployed();
+      try{
+        await marketPlace.withdrawProvider(data1,{from:owner1});
+        assert.equal(false,true,"not error thrown");
+      }catch(e){
+        return true;
+      }
+    });
+  if(simple && system_test && true)
+    it("Should try refund un punished subscription",async function(){
+      let marketPlace = await Marketplace.deployed();
+      let zero = await marketPlace.getRefundAmount.call(subscriber1,data1);
+      assert.equal(0,zero,"Bad refund amount");
+      try{
+        await marketPlace.refundSubscriber(data1,{from:subscriber1});
+        assert.equal(false,true,"not error thrown");
+      }catch(e){
+        return true;
+      }
+    });
+  if(simple && system_test && true)
+    it("Should change owner", async function(){
+      let marketPlace = await Marketplace.deployed();
+      let current = await marketPlace.mOwner.call();
+      await marketPlace.transferOwnership(subscriber2,{from:accounts[0]});
+      current = await marketPlace.mOwner.call();
+      assert.equal(current,subscriber2,"Ownership did not change");
+      await marketPlace.transferOwnership(accounts[0],{from:subscriber2});
+      current = await marketPlace.mOwner.call();
+      assert.equal(current,accounts[0],"Ownership did not change back");
+    });
+
 });
 
 function parseSubscription(info){
