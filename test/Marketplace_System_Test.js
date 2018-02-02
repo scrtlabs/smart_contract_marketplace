@@ -193,7 +193,7 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       let marketPlace = await Marketplace.deployed();
       try{
         await marketPlace.subscribe(expiredAndPunishedOwner,{from:subscriber3});
-      } catch(e){
+      } catch(e){ //
         return true;
       }
     });
