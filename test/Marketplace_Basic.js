@@ -110,7 +110,9 @@ if(simple && subscriptions && mock && true)
 		return Marketplace.deployed().then(instance=>{
 			marketPlace = instance; 
 			var punished = true;
-			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,punished,{from:expiredSubscriber});
+      var withTx = false;
+      var relativePunish =2;
+			return marketPlace.mockPayableProvider(expiredDataSet,price3,dataOwner1,punished,relativePunish,withTx,{from:expiredSubscriber});
 		}).then(tx=>{
 			return marketPlace.getWithdrawAmount.call(expiredDataSet);
 		}).then(balance=>{

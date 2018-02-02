@@ -171,7 +171,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         }
         return orderAmount;
     }
-    function handleOrderRefundCalc(Order order) internal returns(uint256 refundAmount){
+    function handleOrderRefundCalc(Order order) internal view returns(uint256 refundAmount){
         refundAmount = 0;
         if(!order.isRefundPaid){ //order not paid 
             if(mProviders[order.dataSourceName].isPunished){ // provider is punished

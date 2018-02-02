@@ -19,6 +19,7 @@ module.exports = {
         });
     },
     toAscii: function(hex) {
+        if(hex =="") return hex;
         hex = hex.split("00")[0];
         var str = "";
         var i = 0, l = hex.length;

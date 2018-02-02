@@ -13,7 +13,8 @@ contract TestableMock is Marketplace{
         
     }
         // mock temp func
-    function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner, bool isPunished)
+    function mockPayableProvider(bytes32 _dataSourceName, 
+    	uint _price, address _dataOwner, bool isPunished, uint relativePunish, bool withTransfer)
     public returns(bool){
         // add mock provider 
         mProviders[_dataSourceName].owner = _dataOwner;
@@ -22,7 +23,7 @@ contract TestableMock is Marketplace{
         mProviders[_dataSourceName].name = _dataSourceName;
         mProviders[_dataSourceName].price = _price;
         mProviders[_dataSourceName].isPunished = isPunished;
-        mProviders[_dataSourceName].punishTimeStamp = now/2 - FIXED_SUBSCRIPTION_PERIOD/2;
+        mProviders[_dataSourceName].punishTimeStamp = now/relativePunish - FIXED_SUBSCRIPTION_PERIOD/relativePunish;
         mProviders[_dataSourceName].isProvider = true;
         mProviders[_dataSourceName].isActive = true;
         mProviders[_dataSourceName].nextProvider = "";
@@ -35,8 +36,8 @@ contract TestableMock is Marketplace{
             subscriber : msg.sender,
             provider : mProviders[_dataSourceName].owner,
             price : mProviders[_dataSourceName].price,
-            startTime : now/2 - FIXED_SUBSCRIPTION_PERIOD,
-            endTime : now/2,
+            startTime : now/relativePunish - FIXED_SUBSCRIPTION_PERIOD,
+            endTime : now/relativePunish,
             isPaid : false,
             isOrder : true,
             isRefundPaid : false
@@ -44,6 +45,9 @@ contract TestableMock is Marketplace{
         // update provider data 
         mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
         mProviders[_dataSourceName].subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum.add(1);
+       	if(withTransfer){
+       		require(mToken.transferFrom(msg.sender,this,_price));
+       	}
         return true;
     }
 }

@@ -9,7 +9,10 @@ const simple = true;
 const mock = true;
 const system_test = true;
 
+
+
 contract('Marketplace Mock', function(accounts) {
+const emptyAddress ="0x0000000000000000000000000000000000000000000000000000000000000000";
  // provider 1
  const owner1 = accounts[1];
  const data1 = "Data1";
@@ -50,128 +53,102 @@ contract('Marketplace Mock', function(accounts) {
   });
  if(simple && system_test && true)
   it("Should initiate the testing enviorment",()=>{
-
-    toDistribute = [{addr:subscriber1,initial: initialBal1},
-    {addr:subscriber2,initial: initialBal2},
-    {addr:subscriberRefund,initial: initialBalRefund}];
-
     return EnigmaToken.deployed().then(instance=>{
-      distribute(instance,accounts[0],toDistribute).then(success=>{
-        assert.equal(success,true,"Initiation failed");
-      })
+      eng = instance;
+      return eng.transfer(subscriber1,initialBal1,{from:accounts[0]});
+    }).then(tx=>{
+      return eng.transfer(subscriber2,initialBal1,{from:accounts[0]});
+    }).then(tx=>{
+      return eng.transfer(subscriberRefund,initialBal1,{from:accounts[0]});
+    }).then(tx=>{
+      return eng.balanceOf.call(subscriber1);
+    }).then(bal=>{
+      bal1 = bal.toNumber();
+      return eng.balanceOf.call(subscriber2);
+    }).then(bal=>{
+      bal2 = bal.toNumber();
+      return eng.balanceOf.call(subscriberRefund);
+    }).then(bal=>{
+      bal3 = bal.toNumber();
+      assert.equal(initialBal1,bal1, "balances not equal");
+      assert.equal(initialBal1,bal2, "balances not equal");
+      assert.equal(initialBal1,bal3, "balances not equal");
     });
   });
- // if(simple && system_test && true)
- //  it("Should register 3 normal dataSets",()=>{
- //    return Marketplace.deployed().then(instance=>{
-      
- //      toRegister = [{addr:owner1,price:price1,name:data1},
- //      {addr:owner2,price:price2,name:data2},
- //      {addr:owner3,price:price3,name:data3}];
-
- //      registerAll(instance,toRegister).then(success=>{
- //        assert.equal(success,true,"Registration failed");
- //      });
- //    });
- //  });
-
-    it("Should register 1 data ",()=>{
+  if(simple && system_test && true)
+    it("Should register 3 data providers",()=>{
       return Marketplace.deployed().then(instance=>{
         mp = instance;
         return mp.register(data1, price1, owner1,{from:owner1});
       }).then(tx=>{
+        return mp.register(data2, price2, owner2,{from:owner2});
+      }).then(tx=>{
+        return mp.register(data3, price3, owner3,{from:owner3});
+      }).then(tx=>{
+        return mp.getAllProviders.call();
+      }).then(providers=>{
+        shouldExist = [data1,data2,data3];
+        providers.forEach(p=>{
+          if(p != emptyAddress){
+            var contains = shouldExist.indexOf(utils.toAscii(p))>-1;
+            assert(contains,true, "provider is not registerd");
+          }
+        });
       });
     });
 
-    it("Should register 2 data ",()=>{
+ if(simple && system_test && true)
+  it("Register (mock) expired data set, refund and withdraw",()=>{
+    return EnigmaToken.deployed().then(instance=>{
+      relativePunish =2;
+      enigma = instance;
       return Marketplace.deployed().then(instance=>{
         mp = instance;
-        return mp.register(data2, price2, owner2,{from:owner2});
+        return enigma.approve(mp.address,priceExpiredAndPunished,{from:subscriberRefund});
       }).then(tx=>{
+        return enigma.allowance(subscriberRefund,mp.address);
+      }).then(allowed=>{
+        assert.equal(allowed.toNumber(),priceExpiredAndPunished,"allowance not equal");
+        withTx = true;
+        return mp.mockPayableProvider(
+          dataExpiredAndPunished,
+          priceExpiredAndPunished,
+          expiredAndPunishedOwner,
+          true,
+          relativePunish,
+          withTx,
+          {from:subscriberRefund});
+      }).then(tx=>{
+        return mp.getWithdrawAmount.call(dataExpiredAndPunished);
+      }).then(withdraw=>{
+        assert.equal(withdraw.toNumber(),priceExpiredAndPunished/relativePunish, "withdraw and price not equal");
+        return mp.getRefundAmount.call(subscriberRefund,dataExpiredAndPunished);
+      }).then(refund=>{
+        assert.equal(refund.toNumber(),priceExpiredAndPunished/relativePunish,"refund amount not equal");
+        return mp.withdrawProvider(dataExpiredAndPunished, {from:expiredAndPunishedOwner});
+      }).then(tx=>{
+        return mp.getWithdrawAmount.call(dataExpiredAndPunished);
+      }).then(withdraw=>{
+        assert.equal(withdraw.toNumber(),0, "withdraw not 0");
+        return mp.refundSubscriber(dataExpiredAndPunished,{from:subscriberRefund});
+      }).then(tx=>{
+        return mp.getRefundAmount.call(subscriberRefund,dataExpiredAndPunished);
+      }).then(refund=>{
+        assert.equal(refund.toNumber(),0,"refund not 0");
+        return enigma.balanceOf.call(subscriberRefund);
+      }).then(subscriberBalance=>{
+        assert.equal(subscriberBalance.toNumber(),initialBalRefund - priceExpiredAndPunished/relativePunish,"ENG subscriber wrong balance");
+        return enigma.balanceOf.call(expiredAndPunishedOwner);
+      }).then(providerBalance=>{
+        assert.equal(providerBalance.toNumber(),priceExpiredAndPunished/relativePunish,"ENG provider wrong balanc");
       });
     });
- if(simple && system_test && true)
-  it("Register (mock) expired data set",()=>{
-    //function mockPayableProvider(bytes32 _dataSourceName, uint _price, address _dataOwner, bool isPunished)
-    Marketplace.deployed().then(instance=>{
-      mp = instance;
-      return instance.mockPayableProvider(dataExpiredAndPunished,
-        priceExpiredAndPunished,
-        expiredAndPunishedOwner,
-        true,
-        {from:subscriberRefund});
-    }).then(tx=>{
-            return mp.getWithdrawAmount(dataExpiredAndPunished);
-    }).then(amount=>{
-      assert.equal(amount.toNumber(),priceExpiredAndPunished/2, "prices don't match in expired withdraw.");
-    });
   });
+   
+  
 });
 
 
-// distribute tokens to accounts from the distributer account with the token instance.
-function distribute(token,distributer,accounts){
-  var counter = 0;
-  var len = accounts.length-1;
-  return new Promise((mResolve,reject)=>{
-    accounts.forEach(account=>{
-    var b = account.initial;
-    var a = account.addr;
-    new Promise((resolve,reject)=>{
-      tx = token.transfer(a,b,{from:distributer});
-      resolve(tx);
-    }).then(tx=>{
-      return token.balanceOf.call(a);
-    }).then(balance=>{
-      assert.equal(b,balance.toNumber(),"balances don't match");
-      counter++;
-    }).then(()=>{
-      if(counter == len)
-        mResolve(true);
-    })
-  })
-  });
-}
-
-// register all the providers with the marketplace instance.
-function registerAll(marketPlace,providers){
-  var counter = 0;
-  var len = providers.length-1;
-  return new Promise((mResolve,mReject)=>{
-    providers.forEach(provider=>{
-      var a = provider.addr;
-      var p = provider.price;
-      var n = provider.name;
-      new Promise((res,rej)=>{
-        tx = marketPlace.register(n,p,a,{from:a});
-        res(tx);
-      }).then(tx=>{
-          return marketPlace.getDataProviderInfo.call(n);
-      }).then(info=>{
-        //printProviderInfo(info);
-        var owner = info[0];
-        var price = info[1].toNumber();
-        var volume = info[2].toNumber();
-        var subscriptionsNum = info[3].toNumber();
-        var isProvider =info[4];
-        var isActive = info[5];
-        var isPunished = info[6];
-        assert.equal(owner,a,"address incorect");
-        assert.equal(price,p,"price incorect");
-        assert.equal(volume,0,"volume incorect");
-        assert.equal(subscriptionsNum,0,"subscriptions incorect");
-        assert.equal(isProvider,true,"isProvider incorect");
-        assert.equal(isActive,true,"isActive incorect");
-        assert.equal(isPunished,false,"isPunished incorect");
-        counter++;
-        return true;
-      }).then(one_succ=>{
-        if(counter == len)
-          mResolve(true);
-      });
-    });
-  });
-}
 
 function printProviderInfo(info){
         var owner = info[0];
@@ -189,6 +166,5 @@ function printProviderInfo(info){
         console.log("isActive : " + isActive);
         console.log("isPunished : " +isPunished );
 }
-
 
 
