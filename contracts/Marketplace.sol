@@ -197,8 +197,8 @@ contract Marketplace is IMarketplace,BasicMarketplace{
     internal
     validPrice(_amount)
     returns (bool){
-         require(_from != address(0) && _to != address(0));
-         require(mToken.allowance(_from,address(this)) >= _amount);
+         require(_from != address(0) && _to == address(this));
+         require(mToken.allowance(_from,_to) >= _amount);
          require(mToken.transferFrom(_from,_to,_amount));
          SubscriptionDeposited(_from, _to, _amount);
          return true;
