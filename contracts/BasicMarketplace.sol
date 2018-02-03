@@ -188,6 +188,7 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         _;      
     }
     modifier uniqueDataName(bytes32 _dataSourceName) {
+        require(_dataSourceName.length > 0);
         require(!mProviders[_dataSourceName].isProvider);
         _;
     }

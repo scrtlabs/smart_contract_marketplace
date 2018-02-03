@@ -49,66 +49,63 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       assert.equal("1",version,"versions dont match");
     });
   });
+
  if(simple && system_test && true)
-  it("Should initiate the testing enviorment",()=>{
-    return EnigmaToken.deployed().then(instance=>{
-      eng = instance;
-      return eng.transfer(subscriber1,initialBal1,{from:accounts[0]});
-    }).then(tx=>{
-      return eng.transfer(subscriber2,initialBal1,{from:accounts[0]});
-    }).then(tx=>{
-      return eng.transfer(subscriberRefund,initialBal1,{from:accounts[0]});
-    }).then(tx=>{
-      return eng.balanceOf.call(subscriber1);
-    }).then(bal=>{
-      bal1 = bal.toNumber();
-      return eng.balanceOf.call(subscriber2);
-    }).then(bal=>{
-      bal2 = bal.toNumber();
-      return eng.balanceOf.call(subscriberRefund);
-    }).then(bal=>{
-      bal3 = bal.toNumber();
-      assert.equal(initialBal1,bal1, "balances not equal");
-      assert.equal(initialBal1,bal2, "balances not equal");
-      assert.equal(initialBal1,bal3, "balances not equal");
-    });
+  it("Should initiate the testing enviorment",async function(){
+    let marketPlace = await Marketplace.deployed();
+    let enigma = await EnigmaToken.deployed();
+    // transfer tokens 
+    await enigma.transfer(subscriber1,initialBal1,{from:accounts[0]});
+    await enigma.transfer(subscriber2,initialBal1,{from:accounts[0]});
+    await enigma.transfer(subscriberRefund,initialBal1,{from:accounts[0]});
+    // validate balance 
+    let bal1 = await enigma.balanceOf.call(subscriber1);
+    let bal2 = await enigma.balanceOf.call(subscriber2);
+    let bal3 = await enigma.balanceOf.call(subscriberRefund);
+    assert.equal(initialBal1,bal1.toNumber(), "balances not equal");
+    assert.equal(initialBal1,bal2.toNumber(), "balances not equal");
+    assert.equal(initialBal1,bal3.toNumber(), "balances not equal");
   });
   if(simple && system_test && true)
-    it("Should register 3 data providers",()=>{
-      return Marketplace.deployed().then(instance=>{
-        mp = instance;
-        return mp.register(data1, price1, owner1,{from:owner1});
-      }).then(tx=>{
-        return mp.register(data2, price2, owner2,{from:owner2});
-      }).then(tx=>{
-        return mp.register(data3, price3, owner3,{from:owner3});
-      }).then(tx=>{
-        return mp.getAllProviders.call();
-      }).then(providers=>{
-        shouldExist = [data1,data2,data3];
-        providers.forEach(p=>{
+    it("Should register empty name and throw",async function(){
+      let marketPlace = await Marketplace.deployed();
+      try{
+        await marketPlace.register("", price1, owner1,{from:owner1});
+        assert.equal(false,true,"Empty name registred");
+      }catch(e){
+        return true;
+      }
+    });
+  if(simple && system_test && true)
+    it("Should register 3 data providers",async function(){
+      let marketPlace = await Marketplace.deployed();
+      // register 
+      await marketPlace.register(data1, price1, owner1,{from:owner1});
+      await marketPlace.register(data2, price2, owner2,{from:owner2});
+      await marketPlace.register(data3, price3, owner3,{from:owner3});
+      // validate
+      let providers = await marketPlace.getAllProviders.call();
+      let shouldExist = [data1,data2,data3];
+      providers.forEach(p=>{
           if(p != emptyAddress){
             var contains = shouldExist.indexOf(utils.toAscii(p))>-1;
             assert(contains,true, "provider is not registerd");
           }
-        });
       });
     });
 
  if(simple && mock && system_test && true)
-  it("Register (mock) expired data set, refund and withdraw",()=>{
-    return EnigmaToken.deployed().then(instance=>{
-      relativePunish =2;
-      enigma = instance;
-      return Marketplace.deployed().then(instance=>{
-        mp = instance;
-        return enigma.approve(mp.address,priceExpiredAndPunished,{from:subscriberRefund});
-      }).then(tx=>{
-        return enigma.allowance(subscriberRefund,mp.address);
-      }).then(allowed=>{
-        assert.equal(allowed.toNumber(),priceExpiredAndPunished,"allowance not equal");
-        withTx = true;
-        return mp.mockPayableProvider(
+  it("Register (mock) expired data set, refund and withdraw",async function(){
+    let withTx = true; // mock function meaninig: do actual token transfer on subscription
+    let relativePunish = 2; // meaning => provider got punished half way through the subscription
+    let enigma = await EnigmaToken.deployed();
+    let marketPlace = await Marketplace.deployed();
+    // approval ENG with Marketplace protocol
+    await enigma.approve(marketPlace.address,priceExpiredAndPunished,{from:subscriberRefund});
+    let allowed = await enigma.allowance(subscriberRefund,marketPlace.address);
+    assert.equal(allowed.toNumber(),priceExpiredAndPunished,"allowance not equal");
+    // mock => register expired and punished subscription + addsubscriber 
+    await marketPlace.mockPayableProvider(
           dataExpiredAndPunished,
           priceExpiredAndPunished,
           expiredAndPunishedOwner,
@@ -116,31 +113,23 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
           relativePunish,
           withTx,
           {from:subscriberRefund});
-      }).then(tx=>{
-        return mp.getWithdrawAmount.call(dataExpiredAndPunished);
-      }).then(withdraw=>{
-        assert.equal(withdraw.toNumber(),priceExpiredAndPunished/relativePunish, "withdraw and price not equal");
-        return mp.getRefundAmount.call(subscriberRefund,dataExpiredAndPunished);
-      }).then(refund=>{
-        assert.equal(refund.toNumber(),priceExpiredAndPunished/relativePunish,"refund amount not equal");
-        return mp.withdrawProvider(dataExpiredAndPunished, {from:expiredAndPunishedOwner});
-      }).then(tx=>{
-        return mp.getWithdrawAmount.call(dataExpiredAndPunished);
-      }).then(withdraw=>{
-        assert.equal(withdraw.toNumber(),0, "withdraw not 0");
-        return mp.refundSubscriber(dataExpiredAndPunished,{from:subscriberRefund});
-      }).then(tx=>{
-        return mp.getRefundAmount.call(subscriberRefund,dataExpiredAndPunished);
-      }).then(refund=>{
-        assert.equal(refund.toNumber(),0,"refund not 0");
-        return enigma.balanceOf.call(subscriberRefund);
-      }).then(subscriberBalance=>{
-        assert.equal(subscriberBalance.toNumber(),initialBalRefund - priceExpiredAndPunished/relativePunish,"ENG subscriber wrong balance");
-        return enigma.balanceOf.call(expiredAndPunishedOwner);
-      }).then(providerBalance=>{
-        assert.equal(providerBalance.toNumber(),priceExpiredAndPunished/relativePunish,"ENG provider wrong balanc");
-      });
-    });
+    // initial available refund/withdraw 
+    let withdraw = await marketPlace.getWithdrawAmount.call(dataExpiredAndPunished);
+    assert.equal(withdraw.toNumber(),priceExpiredAndPunished/relativePunish, "withdraw and price not equal");
+    let refund = await marketPlace.getRefundAmount.call(subscriberRefund,dataExpiredAndPunished);
+    assert.equal(refund.toNumber(),priceExpiredAndPunished/relativePunish,"refund amount not equal");
+    // tx: withdraw refund/withdraw
+    await marketPlace.withdrawProvider(dataExpiredAndPunished, {from:expiredAndPunishedOwner});
+    withdraw = await marketPlace.getWithdrawAmount.call(dataExpiredAndPunished);
+    assert.equal(withdraw.toNumber(),0, "withdraw not 0");
+    await marketPlace.refundSubscriber(dataExpiredAndPunished,{from:subscriberRefund});
+    refund = await marketPlace.getRefundAmount.call(subscriberRefund,dataExpiredAndPunished);
+    assert.equal(refund.toNumber(),0,"refund not 0");
+    // verify balances updated in the EnigmaToken
+    let subscriberBalance = await enigma.balanceOf.call(subscriberRefund);
+    let providerBalance = await enigma.balanceOf.call(expiredAndPunishedOwner);
+    assert.equal(subscriberBalance.toNumber(),initialBalRefund - priceExpiredAndPunished/relativePunish,"ENG subscriber wrong balance");
+    assert.equal(providerBalance.toNumber(),priceExpiredAndPunished/relativePunish,"ENG provider wrong balanc");
   });
 
   if(simple && system_test && true)
@@ -148,11 +137,11 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       let enigma = await EnigmaToken.deployed();
       let marketPlace = await Marketplace.deployed();
       // approve the Marketplace contract as a spender
-      await enigma.approve(mp.address,price1,{from:subscriber1});
-      await enigma.increaseApproval(mp.address,price2,{from:subscriber1});
-      await enigma.approve(mp.address,price3,{from:subscriber2});
-      let allowance1 = await enigma.allowance(subscriber1,mp.address);
-      let allowance2 = await enigma.allowance(subscriber2,mp.address);
+      await enigma.approve(marketPlace.address,price1,{from:subscriber1});
+      await enigma.increaseApproval(marketPlace.address,price2,{from:subscriber1});
+      await enigma.approve(marketPlace.address,price3,{from:subscriber2});
+      let allowance1 = await enigma.allowance(subscriber1,marketPlace.address);
+      let allowance2 = await enigma.allowance(subscriber2,marketPlace.address);
       assert.equal(allowance1.toNumber(),price1+price2,"allowed is not equal to price");
       assert.equal(allowance2.toNumber(),price3,"allowed is not equal to price");
       // subscribe to data 
@@ -232,7 +221,7 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       let enigma = await EnigmaToken.deployed();
       let marketPlace = await Marketplace.deployed();
       // approve the Marketplace contract as a spender
-      await enigma.increaseApproval(mp.address,price3,{from:subscriber1});
+      await enigma.increaseApproval(marketPlace.address,price3,{from:subscriber1});
       let punish = true;
       await marketPlace.setPunishProvider(data3,punish,{from:accounts[0]});
       try{
@@ -265,6 +254,37 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       await marketPlace.updateDataSourcePrice(data1,newPrice,{from:owner1});
       let info = await marketPlace.getDataProviderInfo(data1);
       assert.equal(parseProvider(info).price,newPrice,"price did not change");
+    });
+  if(simple && system_test && true)
+    it("Should register in a loop",async function(){ 
+      let registers = ["SomeData1","SomeData2","SomeData3","SomeData4","SomeData5","SomeData6",
+      "SomeData7","SomeData8","SomeData9","SomeData1a","SomeData11","SomeData12","SomeData13","SomeData14"];
+      let price = [112,113,114,115,116,117, 201,202,203,204,205,206,207,208];
+      marketPlace = await Marketplace.deployed();
+      registers.forEach(async function(r,idx){
+        await marketPlace.register(r,price[idx],owner1,{from:accounts[0]});
+        let info = await marketPlace.getDataProviderInfo.call(r);
+        assert.equal(parseProvider(info).price,price[idx],"Names dont equal");
+      });
+      let all = await marketPlace.getAllProviders.call();
+      let totalProviders = 18;
+      assert.equal((all.length-2), totalProviders , "Providers not fully registerd");
+    });
+  if(simple && system_test && true)
+    it("Should subscribe in a loop and check volume/subscriptions ",async function(){
+      let data = "SomeData1";
+      let price = 112;
+      let subsNum = 10;
+      let marketPlace = await Marketplace.deployed();
+      let enigma = await EnigmaToken.deployed();
+      await enigma.approve(marketPlace.address,price*subsNum, {from:subscriber1});
+      for(var i=0;i<subsNum;++i){
+        await marketPlace.subscribe(data,{from:subscriber1});
+      }
+      let providerInfo = await marketPlace.getDataProviderInfo.call(data);
+      providerInfo = parseProvider(providerInfo);
+      assert.equal(providerInfo.subscriptionsNum,subsNum,"Subscriptions number not equal");
+      assert.equal(providerInfo.volume, subsNum * price , "Volume dont match");
     });
   //
 });

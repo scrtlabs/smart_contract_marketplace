@@ -165,14 +165,14 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity 0.4.18;\n\nimport \"./zeppelin-solidity/SafeMath.sol\";\nimport \"./zeppelin-solidity/Ownable.sol\";\nimport \"./IBasicMarketplace.sol\";\ncontract IERC20 {\n  function balanceOf(address who) public constant returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  function allowance(address owner, address spender) public constant returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n\n\ncontract BasicMarketplace is IBasicMarketplace,Ownable{\n\n\tusing SafeMath for uint256;\n\tusing SafeMath for uint;\n\n\t/*Data structures */\n\n\tstruct Order{\n        bytes32 dataSourceName;\n        address subscriber;\n        address provider;\n        uint price;\n        uint startTime;\n        uint endTime;\n        bool isPaid;\n        bool isOrder;\n        bool isRefundPaid;\n    }\n    struct Provider{\n        address owner;\n        uint volume;\n        uint subscriptionsNum;\n        bytes32 name;\n        uint price;\n        bool isPunished;\n        uint punishTimeStamp;\n        bool isProvider;\n        bool isActive;\n        bytes32 nextProvider;\n    }\n    // pointers to linked list of Providers\n    bytes32 public mBegin; \n    bytes32 public mCurrent;\n    // number of providers\n    uint public mProvidersSize;\n\t// Enigma Token\n\tIERC20 public mToken;\n\t// Fixed time defined (unixTimeStamp)\n\tuint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;\n    // version number \n    string public constant MARKETPLACE_VERSION = \"1\";\n    // all providers\n    mapping(bytes32=>Provider) public mProviders;\n    // provider name = > all orders \n    mapping(bytes32=>Order[]) public mOrders;\n\n\tfunction BasicMarketplace(address _tokenAddress) public {\n\t\trequire(_tokenAddress != address(0));\n\t\tmToken = IERC20(_tokenAddress);\n        // initiate linked map \n        mProviders[0x0].nextProvider = \"\";\n        mProviders[0x0].name = 0x0;\n        mCurrent = mProviders[0x0].name;\n        mBegin = mProviders[0x0].name;\n        mProvidersSize = 1;\n\t}\n\n    function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) \n    external \n    onlyDataProvider(_dataSourceName)\n    validPrice(_newPrice)\n    returns (bool success){\n        mProviders[_dataSourceName].price = _newPrice;\n        PriceUpdate(msg.sender, _dataSourceName,_newPrice);\n        success = true;\n    }\n    function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) \n    external \n    onlyDataProvider(_dataSourceName) \n    returns (bool success){\n        mProviders[_dataSourceName].isActive = _isActive;\n        ActivityUpdate(msg.sender, _dataSourceName, _isActive);\n        success = true;\n    }\n    function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) \n    public \n    view \n    returns (address subscriber,\n        bytes32 dataSourceName,\n        uint price,\n        uint startTime,\n        uint endTime,\n        bool isUnExpired,\n        bool isPaid, \n        bool isPunishedProvider,\n        bool isOrder){\n        uint256 size = mOrders[_dataSourceName].length;\n        require(size>0);\n        require(address(0) != _subscriber);\n        require(mProviders[_dataSourceName].isProvider);\n        for(uint i=size-1;i>=0;i--){\n            if(mOrders[_dataSourceName][i].subscriber == _subscriber){\n                subscriber = mOrders[_dataSourceName][i].subscriber;\n                price = mOrders[_dataSourceName][i].price;\n                startTime = mOrders[_dataSourceName][i].startTime;\n                endTime = mOrders[_dataSourceName][i].endTime;\n                isUnExpired = !isExpiredSubscription(subscriber,_dataSourceName);\n                isPaid = mOrders[_dataSourceName][i].isPaid;\n                isPunishedProvider = mProviders[_dataSourceName].isPunished;\n                isOrder = mOrders[_dataSourceName][i].isOrder;\n                i = 0;\n                break;\n            }\n            if( i==0 ){\n                break;\n            }\n        }\n        return (subscriber,_dataSourceName,price,startTime,endTime,isUnExpired,isPaid,isPunishedProvider,isOrder);\n    }\n\n    function getAllProviders() public view returns (bytes32[]){\n        bytes32[] memory names = new bytes32[](mProvidersSize);\n        bytes32 iterator = mBegin;\n        for(uint i=0; i< mProvidersSize; ++i){\n            names[i] = mProviders[iterator].name;\n            iterator = mProviders[iterator].nextProvider;\n        }\n        return names;\n    }\n    function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) \n    public\n    view \n    returns \n    (bool isExpired){\n        uint256 size = mOrders[_dataSourceName].length;\n        require(size>0);\n        require(mProviders[_dataSourceName].isProvider);\n        require(address(0) != _subscriber);\n        for(uint i=size-1;i>=0;i--){\n            if(mOrders[_dataSourceName][i].subscriber == _subscriber){\n                return now >= mOrders[_dataSourceName][i].endTime;\n            }\n            if( i==0 ){\n                break;\n            }\n        }\n        isExpired = true;\n    }\n    function getDataProviderInfo(bytes32 _dataSourceName) \n    public \n    view \n    returns(\n        address owner,\n        uint256 price,\n        uint256 volume,\n        uint256 subscriptionsNum,\n        bool isProvider,\n        bool isActive,\n        bool isPunished){\n        owner = mProviders[_dataSourceName].owner;\n        price = mProviders[_dataSourceName].price;\n        volume = mProviders[_dataSourceName].volume;\n        subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum;\n        isProvider = mProviders[_dataSourceName].isProvider;\n        isActive = mProviders[_dataSourceName].isActive;\n        isPunished = mProviders[_dataSourceName].isPunished;\n    }\n\n    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive){\n        isActive =  mProviders[_dataSourceName].isActive;\n    }\n    function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner){\n        owner = mProviders[_dataSourceName].owner;\n    }\n\n\n    /* modifiers */\n    modifier validDataProvider(bytes32 _dataSourceName){\n        require(mProviders[_dataSourceName].isProvider);\n        require(mProviders[_dataSourceName].isActive);\n        require(!mProviders[_dataSourceName].isPunished);  \n        _;      \n    }\n    modifier uniqueDataName(bytes32 _dataSourceName) {\n        require(!mProviders[_dataSourceName].isProvider);\n        _;\n    }\n    modifier validPrice (uint256 _price){\n        require(_price.add(1) > _price); //overflow\n        _;\n    }\n    modifier onlyDataProvider(bytes32 _dataSourceName){\n        require(mProviders[_dataSourceName].isProvider);\n        require(mProviders[_dataSourceName].owner == msg.sender);\n        _;\n    }\n}",
+  "source": "pragma solidity 0.4.18;\n\nimport \"./zeppelin-solidity/SafeMath.sol\";\nimport \"./zeppelin-solidity/Ownable.sol\";\nimport \"./IBasicMarketplace.sol\";\ncontract IERC20 {\n  function balanceOf(address who) public constant returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  function allowance(address owner, address spender) public constant returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n\n\ncontract BasicMarketplace is IBasicMarketplace,Ownable{\n\n\tusing SafeMath for uint256;\n\tusing SafeMath for uint;\n\n\t/*Data structures */\n\n\tstruct Order{\n        bytes32 dataSourceName;\n        address subscriber;\n        address provider;\n        uint price;\n        uint startTime;\n        uint endTime;\n        bool isPaid;\n        bool isOrder;\n        bool isRefundPaid;\n    }\n    struct Provider{\n        address owner;\n        uint volume;\n        uint subscriptionsNum;\n        bytes32 name;\n        uint price;\n        bool isPunished;\n        uint punishTimeStamp;\n        bool isProvider;\n        bool isActive;\n        bytes32 nextProvider;\n    }\n    // pointers to linked list of Providers\n    bytes32 public mBegin; \n    bytes32 public mCurrent;\n    // number of providers\n    uint public mProvidersSize;\n\t// Enigma Token\n\tIERC20 public mToken;\n\t// Fixed time defined (unixTimeStamp)\n\tuint public constant FIXED_SUBSCRIPTION_PERIOD = 30 days;\n    // version number \n    string public constant MARKETPLACE_VERSION = \"1\";\n    // all providers\n    mapping(bytes32=>Provider) public mProviders;\n    // provider name = > all orders \n    mapping(bytes32=>Order[]) public mOrders;\n\n\tfunction BasicMarketplace(address _tokenAddress) public {\n\t\trequire(_tokenAddress != address(0));\n\t\tmToken = IERC20(_tokenAddress);\n        // initiate linked map \n        mProviders[0x0].nextProvider = \"\";\n        mProviders[0x0].name = 0x0;\n        mCurrent = mProviders[0x0].name;\n        mBegin = mProviders[0x0].name;\n        mProvidersSize = 1;\n\t}\n\n    function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) \n    external \n    onlyDataProvider(_dataSourceName)\n    validPrice(_newPrice)\n    returns (bool success){\n        mProviders[_dataSourceName].price = _newPrice;\n        PriceUpdate(msg.sender, _dataSourceName,_newPrice);\n        success = true;\n    }\n    function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) \n    external \n    onlyDataProvider(_dataSourceName) \n    returns (bool success){\n        mProviders[_dataSourceName].isActive = _isActive;\n        ActivityUpdate(msg.sender, _dataSourceName, _isActive);\n        success = true;\n    }\n    function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) \n    public \n    view \n    returns (address subscriber,\n        bytes32 dataSourceName,\n        uint price,\n        uint startTime,\n        uint endTime,\n        bool isUnExpired,\n        bool isPaid, \n        bool isPunishedProvider,\n        bool isOrder){\n        uint256 size = mOrders[_dataSourceName].length;\n        require(size>0);\n        require(address(0) != _subscriber);\n        require(mProviders[_dataSourceName].isProvider);\n        for(uint i=size-1;i>=0;i--){\n            if(mOrders[_dataSourceName][i].subscriber == _subscriber){\n                subscriber = mOrders[_dataSourceName][i].subscriber;\n                price = mOrders[_dataSourceName][i].price;\n                startTime = mOrders[_dataSourceName][i].startTime;\n                endTime = mOrders[_dataSourceName][i].endTime;\n                isUnExpired = !isExpiredSubscription(subscriber,_dataSourceName);\n                isPaid = mOrders[_dataSourceName][i].isPaid;\n                isPunishedProvider = mProviders[_dataSourceName].isPunished;\n                isOrder = mOrders[_dataSourceName][i].isOrder;\n                i = 0;\n                break;\n            }\n            if( i==0 ){\n                break;\n            }\n        }\n        return (subscriber,_dataSourceName,price,startTime,endTime,isUnExpired,isPaid,isPunishedProvider,isOrder);\n    }\n\n    function getAllProviders() public view returns (bytes32[]){\n        bytes32[] memory names = new bytes32[](mProvidersSize);\n        bytes32 iterator = mBegin;\n        for(uint i=0; i< mProvidersSize; ++i){\n            names[i] = mProviders[iterator].name;\n            iterator = mProviders[iterator].nextProvider;\n        }\n        return names;\n    }\n    function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) \n    public\n    view \n    returns \n    (bool isExpired){\n        uint256 size = mOrders[_dataSourceName].length;\n        require(size>0);\n        require(mProviders[_dataSourceName].isProvider);\n        require(address(0) != _subscriber);\n        for(uint i=size-1;i>=0;i--){\n            if(mOrders[_dataSourceName][i].subscriber == _subscriber){\n                return now >= mOrders[_dataSourceName][i].endTime;\n            }\n            if( i==0 ){\n                break;\n            }\n        }\n        isExpired = true;\n    }\n    function getDataProviderInfo(bytes32 _dataSourceName) \n    public \n    view \n    returns(\n        address owner,\n        uint256 price,\n        uint256 volume,\n        uint256 subscriptionsNum,\n        bool isProvider,\n        bool isActive,\n        bool isPunished){\n        owner = mProviders[_dataSourceName].owner;\n        price = mProviders[_dataSourceName].price;\n        volume = mProviders[_dataSourceName].volume;\n        subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum;\n        isProvider = mProviders[_dataSourceName].isProvider;\n        isActive = mProviders[_dataSourceName].isActive;\n        isPunished = mProviders[_dataSourceName].isPunished;\n    }\n\n    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive){\n        isActive =  mProviders[_dataSourceName].isActive;\n    }\n    function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner){\n        owner = mProviders[_dataSourceName].owner;\n    }\n\n\n    /* modifiers */\n    modifier validDataProvider(bytes32 _dataSourceName){\n        require(mProviders[_dataSourceName].isProvider);\n        require(mProviders[_dataSourceName].isActive);\n        require(!mProviders[_dataSourceName].isPunished);  \n        _;      \n    }\n    modifier uniqueDataName(bytes32 _dataSourceName) {\n        require(_dataSourceName.length > 0);\n        require(!mProviders[_dataSourceName].isProvider);\n        _;\n    }\n    modifier validPrice (uint256 _price){\n        require(_price.add(1) > _price); //overflow\n        _;\n    }\n    modifier onlyDataProvider(bytes32 _dataSourceName){\n        require(mProviders[_dataSourceName].isProvider);\n        require(mProviders[_dataSourceName].owner == msg.sender);\n        _;\n    }\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/BasicMarketplace.sol",
   "ast": {
     "attributes": {
       "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/BasicMarketplace.sol",
       "exportedSymbols": {
         "BasicMarketplace": [
-          737
+          744
         ],
         "IERC20": [
           66
@@ -194,10 +194,10 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2263,
+          "SourceUnit": 2445,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/SafeMath.sol",
           "file": "./zeppelin-solidity/SafeMath.sol",
-          "scope": 738,
+          "scope": 745,
           "symbolAliases": [
             null
           ],
@@ -209,10 +209,10 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2168,
+          "SourceUnit": 2350,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/Ownable.sol",
           "file": "./zeppelin-solidity/Ownable.sol",
-          "scope": 738,
+          "scope": 745,
           "symbolAliases": [
             null
           ],
@@ -224,10 +224,10 @@
       },
       {
         "attributes": {
-          "SourceUnit": 848,
+          "SourceUnit": 855,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IBasicMarketplace.sol",
           "file": "./IBasicMarketplace.sol",
-          "scope": 738,
+          "scope": 745,
           "symbolAliases": [
             null
           ],
@@ -252,7 +252,7 @@
             66
           ],
           "name": "IERC20",
-          "scope": 738
+          "scope": 745
         },
         "children": [
           {
@@ -1031,19 +1031,19 @@
       {
         "attributes": {
           "contractDependencies": [
-            847,
-            2167
+            854,
+            2349
           ],
           "contractKind": "contract",
           "documentation": null,
           "fullyImplemented": true,
           "linearizedBaseContracts": [
-            737,
-            2167,
-            847
+            744,
+            2349,
+            854
           ],
           "name": "BasicMarketplace",
-          "scope": 738
+          "scope": 745
         },
         "children": [
           {
@@ -1057,7 +1057,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "IBasicMarketplace",
-                  "referencedDeclaration": 847,
+                  "referencedDeclaration": 854,
                   "type": "contract IBasicMarketplace"
                 },
                 "id": 67,
@@ -1080,7 +1080,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "Ownable",
-                  "referencedDeclaration": 2167,
+                  "referencedDeclaration": 2349,
                   "type": "contract Ownable"
                 },
                 "id": 69,
@@ -1098,7 +1098,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 2262,
+                  "referencedDeclaration": 2444,
                   "type": "library SafeMath"
                 },
                 "id": 71,
@@ -1125,7 +1125,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 2262,
+                  "referencedDeclaration": 2444,
                   "type": "library SafeMath"
                 },
                 "id": 74,
@@ -1150,7 +1150,7 @@
             "attributes": {
               "canonicalName": "BasicMarketplace.Order",
               "name": "Order",
-              "scope": 737,
+              "scope": 744,
               "visibility": "public"
             },
             "children": [
@@ -1397,7 +1397,7 @@
             "attributes": {
               "canonicalName": "BasicMarketplace.Provider",
               "name": "Provider",
-              "scope": 737,
+              "scope": 744,
               "visibility": "public"
             },
             "children": [
@@ -1670,7 +1670,7 @@
             "attributes": {
               "constant": false,
               "name": "mBegin",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "bytes32",
@@ -1696,7 +1696,7 @@
             "attributes": {
               "constant": false,
               "name": "mCurrent",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "bytes32",
@@ -1722,7 +1722,7 @@
             "attributes": {
               "constant": false,
               "name": "mProvidersSize",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "uint256",
@@ -1748,7 +1748,7 @@
             "attributes": {
               "constant": false,
               "name": "mToken",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "contract IERC20",
@@ -1776,7 +1776,7 @@
             "attributes": {
               "constant": true,
               "name": "FIXED_SUBSCRIPTION_PERIOD",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "uint256",
@@ -1818,7 +1818,7 @@
             "attributes": {
               "constant": true,
               "name": "MARKETPLACE_VERSION",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "string memory",
@@ -1860,7 +1860,7 @@
             "attributes": {
               "constant": false,
               "name": "mProviders",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "mapping(bytes32 => struct BasicMarketplace.Provider storage ref)",
@@ -1907,7 +1907,7 @@
             "attributes": {
               "constant": false,
               "name": "mOrders",
-              "scope": 737,
+              "scope": 744,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "mapping(bytes32 => struct BasicMarketplace.Order storage ref[] storage ref)",
@@ -1971,7 +1971,7 @@
               ],
               "name": "BasicMarketplace",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -2051,7 +2051,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -2726,9 +2726,9 @@
               "isConstructor": false,
               "name": "updateDataSourcePrice",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "nonpayable",
-              "superFunction": 748,
+              "superFunction": 755,
               "visibility": "external"
             },
             "children": [
@@ -2832,7 +2832,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 736,
+                      "referencedDeclaration": 743,
                       "type": "modifier (bytes32)",
                       "value": "onlyDataProvider"
                     },
@@ -2867,7 +2867,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 713,
+                      "referencedDeclaration": 720,
                       "type": "modifier (uint256)",
                       "value": "validPrice"
                     },
@@ -3029,7 +3029,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 838,
+                              "referencedDeclaration": 845,
                               "type": "function (address,bytes32,uint256)",
                               "value": "PriceUpdate"
                             },
@@ -3055,7 +3055,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 2274,
+                                  "referencedDeclaration": 2733,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -3177,9 +3177,9 @@
               "isConstructor": false,
               "name": "changeDataSourceActivityStatus",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "nonpayable",
-              "superFunction": 757,
+              "superFunction": 764,
               "visibility": "external"
             },
             "children": [
@@ -3283,7 +3283,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 736,
+                      "referencedDeclaration": 743,
                       "type": "modifier (bytes32)",
                       "value": "onlyDataProvider"
                     },
@@ -3445,7 +3445,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 846,
+                              "referencedDeclaration": 853,
                               "type": "function (address,bytes32,bool)",
                               "value": "ActivityUpdate"
                             },
@@ -3471,7 +3471,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 2274,
+                                  "referencedDeclaration": 2733,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -3596,9 +3596,9 @@
               ],
               "name": "checkAddressSubscription",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "view",
-              "superFunction": 789,
+              "superFunction": 796,
               "visibility": "public"
             },
             "children": [
@@ -4030,7 +4030,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -4127,7 +4127,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -4263,7 +4263,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -5955,9 +5955,9 @@
               ],
               "name": "getAllProviders",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "view",
-              "superFunction": 830,
+              "superFunction": 837,
               "visibility": "public"
             },
             "children": [
@@ -6615,9 +6615,9 @@
               ],
               "name": "isExpiredSubscription",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "view",
-              "superFunction": 824,
+              "superFunction": 831,
               "visibility": "public"
             },
             "children": [
@@ -6841,7 +6841,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -6938,7 +6938,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -7044,7 +7044,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -7490,7 +7490,7 @@
                                               "overloadedDeclarations": [
                                                 null
                                               ],
-                                              "referencedDeclaration": 2276,
+                                              "referencedDeclaration": 2735,
                                               "type": "uint256",
                                               "value": "now"
                                             },
@@ -7764,9 +7764,9 @@
               ],
               "name": "getDataProviderInfo",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "view",
-              "superFunction": 815,
+              "superFunction": 822,
               "visibility": "public"
             },
             "children": [
@@ -8693,9 +8693,9 @@
               ],
               "name": "isActiveDataSource",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "view",
-              "superFunction": 764,
+              "superFunction": 771,
               "visibility": "external"
             },
             "children": [
@@ -8884,9 +8884,9 @@
               ],
               "name": "getOwnerFromName",
               "payable": false,
-              "scope": 737,
+              "scope": 744,
               "stateMutability": "view",
-              "superFunction": 796,
+              "superFunction": 803,
               "visibility": "public"
             },
             "children": [
@@ -9134,7 +9134,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9240,7 +9240,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9346,7 +9346,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9468,7 +9468,7 @@
                     "attributes": {
                       "constant": false,
                       "name": "_dataSourceName",
-                      "scope": 698,
+                      "scope": 705,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -9525,13 +9525,127 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
                             "id": 688,
                             "name": "Identifier",
                             "src": "6627:7:0"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "commonType": {
+                                "typeIdentifier": "t_uint8",
+                                "typeString": "uint8"
+                              },
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "operator": ">",
+                              "type": "bool"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "length",
+                                  "referencedDeclaration": null,
+                                  "type": "uint8"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 686,
+                                      "type": "bytes32",
+                                      "value": "_dataSourceName"
+                                    },
+                                    "id": 689,
+                                    "name": "Identifier",
+                                    "src": "6635:15:0"
+                                  }
+                                ],
+                                "id": 690,
+                                "name": "MemberAccess",
+                                "src": "6635:22:0"
+                              },
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "hexvalue": "30",
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": true,
+                                  "lValueRequested": false,
+                                  "subdenomination": null,
+                                  "token": "number",
+                                  "type": "int_const 0",
+                                  "value": "0"
+                                },
+                                "id": 691,
+                                "name": "Literal",
+                                "src": "6660:1:0"
+                              }
+                            ],
+                            "id": 692,
+                            "name": "BinaryOperation",
+                            "src": "6635:26:0"
+                          }
+                        ],
+                        "id": 693,
+                        "name": "FunctionCall",
+                        "src": "6627:35:0"
+                      }
+                    ],
+                    "id": 694,
+                    "name": "ExpressionStatement",
+                    "src": "6627:35:0"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "type": "tuple()",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_bool",
+                                  "typeString": "bool"
+                                }
+                              ],
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 2736,
+                              "type": "function (bool) pure",
+                              "value": "require"
+                            },
+                            "id": 695,
+                            "name": "Identifier",
+                            "src": "6672:7:0"
                           },
                           {
                             "attributes": {
@@ -9577,9 +9691,9 @@
                                           "type": "mapping(bytes32 => struct BasicMarketplace.Provider storage ref)",
                                           "value": "mProviders"
                                         },
-                                        "id": 689,
+                                        "id": 696,
                                         "name": "Identifier",
-                                        "src": "6636:10:0"
+                                        "src": "6681:10:0"
                                       },
                                       {
                                         "attributes": {
@@ -9591,49 +9705,49 @@
                                           "type": "bytes32",
                                           "value": "_dataSourceName"
                                         },
-                                        "id": 690,
+                                        "id": 697,
                                         "name": "Identifier",
-                                        "src": "6647:15:0"
+                                        "src": "6692:15:0"
                                       }
                                     ],
-                                    "id": 691,
+                                    "id": 698,
                                     "name": "IndexAccess",
-                                    "src": "6636:27:0"
+                                    "src": "6681:27:0"
                                   }
                                 ],
-                                "id": 692,
+                                "id": 699,
                                 "name": "MemberAccess",
-                                "src": "6636:38:0"
+                                "src": "6681:38:0"
                               }
                             ],
-                            "id": 693,
+                            "id": 700,
                             "name": "UnaryOperation",
-                            "src": "6635:39:0"
+                            "src": "6680:39:0"
                           }
                         ],
-                        "id": 694,
+                        "id": 701,
                         "name": "FunctionCall",
-                        "src": "6627:48:0"
+                        "src": "6672:48:0"
                       }
                     ],
-                    "id": 695,
+                    "id": 702,
                     "name": "ExpressionStatement",
-                    "src": "6627:48:0"
+                    "src": "6672:48:0"
                   },
                   {
-                    "id": 696,
+                    "id": 703,
                     "name": "PlaceholderStatement",
-                    "src": "6685:1:0"
+                    "src": "6730:1:0"
                   }
                 ],
-                "id": 697,
+                "id": 704,
                 "name": "Block",
-                "src": "6617:76:0"
+                "src": "6617:121:0"
               }
             ],
-            "id": 698,
+            "id": 705,
             "name": "ModifierDefinition",
-            "src": "6568:125:0"
+            "src": "6568:170:0"
           },
           {
             "attributes": {
@@ -9647,7 +9761,7 @@
                     "attributes": {
                       "constant": false,
                       "name": "_price",
-                      "scope": 713,
+                      "scope": 720,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -9660,19 +9774,19 @@
                           "name": "uint256",
                           "type": "uint256"
                         },
-                        "id": 699,
+                        "id": 706,
                         "name": "ElementaryTypeName",
-                        "src": "6719:7:0"
+                        "src": "6764:7:0"
                       }
                     ],
-                    "id": 700,
+                    "id": 707,
                     "name": "VariableDeclaration",
-                    "src": "6719:14:0"
+                    "src": "6764:14:0"
                   }
                 ],
-                "id": 701,
+                "id": 708,
                 "name": "ParameterList",
-                "src": "6718:16:0"
+                "src": "6763:16:0"
               },
               {
                 "children": [
@@ -9704,13 +9818,13 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
-                            "id": 702,
+                            "id": 709,
                             "name": "Identifier",
-                            "src": "6744:7:0"
+                            "src": "6789:7:0"
                           },
                           {
                             "attributes": {
@@ -9755,7 +9869,7 @@
                                       "isPure": false,
                                       "lValueRequested": false,
                                       "member_name": "add",
-                                      "referencedDeclaration": 2261,
+                                      "referencedDeclaration": 2443,
                                       "type": "function (uint256,uint256) pure returns (uint256)"
                                     },
                                     "children": [
@@ -9765,18 +9879,18 @@
                                           "overloadedDeclarations": [
                                             null
                                           ],
-                                          "referencedDeclaration": 700,
+                                          "referencedDeclaration": 707,
                                           "type": "uint256",
                                           "value": "_price"
                                         },
-                                        "id": 703,
+                                        "id": 710,
                                         "name": "Identifier",
-                                        "src": "6752:6:0"
+                                        "src": "6797:6:0"
                                       }
                                     ],
-                                    "id": 704,
+                                    "id": 711,
                                     "name": "MemberAccess",
-                                    "src": "6752:10:0"
+                                    "src": "6797:10:0"
                                   },
                                   {
                                     "attributes": {
@@ -9791,14 +9905,14 @@
                                       "type": "int_const 1",
                                       "value": "1"
                                     },
-                                    "id": 705,
+                                    "id": 712,
                                     "name": "Literal",
-                                    "src": "6763:1:0"
+                                    "src": "6808:1:0"
                                   }
                                 ],
-                                "id": 706,
+                                "id": 713,
                                 "name": "FunctionCall",
-                                "src": "6752:13:0"
+                                "src": "6797:13:0"
                               },
                               {
                                 "attributes": {
@@ -9806,43 +9920,43 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 700,
+                                  "referencedDeclaration": 707,
                                   "type": "uint256",
                                   "value": "_price"
                                 },
-                                "id": 707,
+                                "id": 714,
                                 "name": "Identifier",
-                                "src": "6768:6:0"
+                                "src": "6813:6:0"
                               }
                             ],
-                            "id": 708,
+                            "id": 715,
                             "name": "BinaryOperation",
-                            "src": "6752:22:0"
+                            "src": "6797:22:0"
                           }
                         ],
-                        "id": 709,
+                        "id": 716,
                         "name": "FunctionCall",
-                        "src": "6744:31:0"
+                        "src": "6789:31:0"
                       }
                     ],
-                    "id": 710,
+                    "id": 717,
                     "name": "ExpressionStatement",
-                    "src": "6744:31:0"
+                    "src": "6789:31:0"
                   },
                   {
-                    "id": 711,
+                    "id": 718,
                     "name": "PlaceholderStatement",
-                    "src": "6796:1:0"
+                    "src": "6841:1:0"
                   }
                 ],
-                "id": 712,
+                "id": 719,
                 "name": "Block",
-                "src": "6734:70:0"
+                "src": "6779:70:0"
               }
             ],
-            "id": 713,
+            "id": 720,
             "name": "ModifierDefinition",
-            "src": "6698:106:0"
+            "src": "6743:106:0"
           },
           {
             "attributes": {
@@ -9856,7 +9970,7 @@
                     "attributes": {
                       "constant": false,
                       "name": "_dataSourceName",
-                      "scope": 736,
+                      "scope": 743,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bytes32",
@@ -9869,19 +9983,19 @@
                           "name": "bytes32",
                           "type": "bytes32"
                         },
-                        "id": 714,
+                        "id": 721,
                         "name": "ElementaryTypeName",
-                        "src": "6835:7:0"
+                        "src": "6880:7:0"
                       }
                     ],
-                    "id": 715,
+                    "id": 722,
                     "name": "VariableDeclaration",
-                    "src": "6835:23:0"
+                    "src": "6880:23:0"
                   }
                 ],
-                "id": 716,
+                "id": 723,
                 "name": "ParameterList",
-                "src": "6834:25:0"
+                "src": "6879:25:0"
               },
               {
                 "children": [
@@ -9913,13 +10027,13 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
-                            "id": 717,
+                            "id": 724,
                             "name": "Identifier",
-                            "src": "6869:7:0"
+                            "src": "6914:7:0"
                           },
                           {
                             "attributes": {
@@ -9953,9 +10067,9 @@
                                       "type": "mapping(bytes32 => struct BasicMarketplace.Provider storage ref)",
                                       "value": "mProviders"
                                     },
-                                    "id": 718,
+                                    "id": 725,
                                     "name": "Identifier",
-                                    "src": "6877:10:0"
+                                    "src": "6922:10:0"
                                   },
                                   {
                                     "attributes": {
@@ -9963,33 +10077,33 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 715,
+                                      "referencedDeclaration": 722,
                                       "type": "bytes32",
                                       "value": "_dataSourceName"
                                     },
-                                    "id": 719,
+                                    "id": 726,
                                     "name": "Identifier",
-                                    "src": "6888:15:0"
+                                    "src": "6933:15:0"
                                   }
                                 ],
-                                "id": 720,
+                                "id": 727,
                                 "name": "IndexAccess",
-                                "src": "6877:27:0"
+                                "src": "6922:27:0"
                               }
                             ],
-                            "id": 721,
+                            "id": 728,
                             "name": "MemberAccess",
-                            "src": "6877:38:0"
+                            "src": "6922:38:0"
                           }
                         ],
-                        "id": 722,
+                        "id": 729,
                         "name": "FunctionCall",
-                        "src": "6869:47:0"
+                        "src": "6914:47:0"
                       }
                     ],
-                    "id": 723,
+                    "id": 730,
                     "name": "ExpressionStatement",
-                    "src": "6869:47:0"
+                    "src": "6914:47:0"
                   },
                   {
                     "children": [
@@ -10019,13 +10133,13 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2277,
+                              "referencedDeclaration": 2736,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
-                            "id": 724,
+                            "id": 731,
                             "name": "Identifier",
-                            "src": "6926:7:0"
+                            "src": "6971:7:0"
                           },
                           {
                             "attributes": {
@@ -10074,9 +10188,9 @@
                                           "type": "mapping(bytes32 => struct BasicMarketplace.Provider storage ref)",
                                           "value": "mProviders"
                                         },
-                                        "id": 725,
+                                        "id": 732,
                                         "name": "Identifier",
-                                        "src": "6934:10:0"
+                                        "src": "6979:10:0"
                                       },
                                       {
                                         "attributes": {
@@ -10084,23 +10198,23 @@
                                           "overloadedDeclarations": [
                                             null
                                           ],
-                                          "referencedDeclaration": 715,
+                                          "referencedDeclaration": 722,
                                           "type": "bytes32",
                                           "value": "_dataSourceName"
                                         },
-                                        "id": 726,
+                                        "id": 733,
                                         "name": "Identifier",
-                                        "src": "6945:15:0"
+                                        "src": "6990:15:0"
                                       }
                                     ],
-                                    "id": 727,
+                                    "id": 734,
                                     "name": "IndexAccess",
-                                    "src": "6934:27:0"
+                                    "src": "6979:27:0"
                                   }
                                 ],
-                                "id": 728,
+                                "id": 735,
                                 "name": "MemberAccess",
-                                "src": "6934:33:0"
+                                "src": "6979:33:0"
                               },
                               {
                                 "attributes": {
@@ -10120,58 +10234,58 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 2274,
+                                      "referencedDeclaration": 2733,
                                       "type": "msg",
                                       "value": "msg"
                                     },
-                                    "id": 729,
+                                    "id": 736,
                                     "name": "Identifier",
-                                    "src": "6971:3:0"
+                                    "src": "7016:3:0"
                                   }
                                 ],
-                                "id": 730,
+                                "id": 737,
                                 "name": "MemberAccess",
-                                "src": "6971:10:0"
+                                "src": "7016:10:0"
                               }
                             ],
-                            "id": 731,
+                            "id": 738,
                             "name": "BinaryOperation",
-                            "src": "6934:47:0"
+                            "src": "6979:47:0"
                           }
                         ],
-                        "id": 732,
+                        "id": 739,
                         "name": "FunctionCall",
-                        "src": "6926:56:0"
+                        "src": "6971:56:0"
                       }
                     ],
-                    "id": 733,
+                    "id": 740,
                     "name": "ExpressionStatement",
-                    "src": "6926:56:0"
+                    "src": "6971:56:0"
                   },
                   {
-                    "id": 734,
+                    "id": 741,
                     "name": "PlaceholderStatement",
-                    "src": "6992:1:0"
+                    "src": "7037:1:0"
                   }
                 ],
-                "id": 735,
+                "id": 742,
                 "name": "Block",
-                "src": "6859:141:0"
+                "src": "6904:141:0"
               }
             ],
-            "id": 736,
+            "id": 743,
             "name": "ModifierDefinition",
-            "src": "6809:191:0"
+            "src": "6854:191:0"
           }
         ],
-        "id": 737,
+        "id": 744,
         "name": "ContractDefinition",
-        "src": "711:6291:0"
+        "src": "711:6336:0"
       }
     ],
-    "id": 738,
+    "id": 745,
     "name": "SourceUnit",
-    "src": "0:7002:0"
+    "src": "0:7047:0"
   },
   "compiler": {
     "name": "solc",
@@ -10179,5 +10293,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-02-01T17:48:00.680Z"
+  "updatedAt": "2018-02-03T18:16:04.427Z"
 }
