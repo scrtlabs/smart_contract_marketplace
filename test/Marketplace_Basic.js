@@ -1,4 +1,4 @@
-var utils = require("../system_node_tests/utils");
+var utils = require("../scripts/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
 var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");

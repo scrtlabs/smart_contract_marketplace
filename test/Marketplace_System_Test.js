@@ -1,5 +1,5 @@
 
-var utils = require("../system_node_tests/utils");
+var utils = require("../scripts/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
 var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
@@ -268,6 +268,8 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       });
       let all = await marketPlace.getAllProviders.call();
       let totalProviders = 18;
+      if(!mock)
+        totalProviders = 17;
       assert.equal((all.length-2), totalProviders , "Providers not fully registerd");
     });
   if(simple && system_test && true)
