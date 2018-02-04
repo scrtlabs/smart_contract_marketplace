@@ -164,6 +164,27 @@ transfer(theOwner,_subscriber.address,_provider.price).then(tx=>{
 
 ```
 
+In order to get all the providers list and their info one could use the following sample: 
+(Note: the return param documentation can be found inside /IBasicMarketplace.sol or the documentation site mentioned above)
+
+```node
+// get all providers + their info (provider[0] = 0x0 just an indicator)
+async function getAllProviders(){
+	let providerInfo = [];
+	let marketPlace = await MarketPlaceContract.deployed();	
+	let providers = await marketPlace.getAllProviders.call();
+	for(var i in providers){
+		let info = await marketPlace.getDataProviderInfo.call(web3.toAscii(providers[i]));
+		providerInfo.push({name: providers[i], info: info});
+	}
+	return providerInfo;
+}
+
+```
+getAllProviders().then(providers=>{
+	// full list with details provider data.
+});
+
 Asynchronous examples:
 
 To register a data source.

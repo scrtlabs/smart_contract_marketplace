@@ -11,7 +11,7 @@ let theOwner = web3.eth.accounts[0];
 // provider 
 var _provider = {};
 _provider.address = web3.eth.accounts[1];
-_provider.dataName = "Data1";
+_provider.dataName = "Dat3asas1";
 _provider.price = 1500;
 //subscriber 
 var _subscriber = {};
@@ -31,6 +31,7 @@ async function register(provider){
 	let reg_tx = await marketPlace.register(provider.dataName,provider.price,provider.address,{from:provider.address,gas:gas});
 	// validate
 	let providerInfo = await marketPlace.getDataProviderInfo.call(provider.dataName);
+	console.log("registred! ");
 	return providerInfo;
 }
 
@@ -50,12 +51,27 @@ async function subscribe(provider,subscriber){
 }
 
 // registration + subscription
+
 transfer(theOwner,_subscriber.address,_provider.price).then(tx=>{
 	register(_provider).then(info=>{
 		subscribe(_provider,_subscriber);
 	});
 });
 
+// get all providers + their info (provoder[0] = 0x0 just an indicator)
+async function getAllProviders(){
+	let providerInfo = [];
+	let marketPlace = await MarketPlaceContract.deployed();	
+	let providers = await marketPlace.getAllProviders.call();
+	for(var i in providers){
+		let info = await marketPlace.getDataProviderInfo.call(web3.toAscii(providers[i]));
+		providerInfo.push({name: providers[i], info: info});
+	}
+	return providerInfo;
+}
 
+getAllProviders().then(providers=>{
+	// full list with details provider data.
+});
 
 
