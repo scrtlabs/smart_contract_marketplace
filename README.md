@@ -180,10 +180,11 @@ async function getAllProviders(){
 	return providerInfo;
 }
 
-```
 getAllProviders().then(providers=>{
 	// full list with details provider data.
 });
+```
+
 
 Asynchronous examples:
 
