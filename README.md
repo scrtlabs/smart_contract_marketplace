@@ -212,13 +212,16 @@ will run the payment process and trigger a SubscriptionPaid() event.
 
 
 ```node
-	function safeTransfer(address _from, address _to, uint256 _amount) internal returns (bool){
-		require(address(_from) != 0 && address(_to)!=0);
-		require(mToken.allowance(_from,address(this)) >= _amount);
-		require(mToken.transferFrom(_from,_to,_amount));
-		SubscriptionPaid(_from, _to, _amount);
-		return true;
-	}
+    function safeToMarketPlaceTransfer(address _from, address _to, uint256 _amount) 
+    internal
+    validPrice(_amount)
+    returns (bool){
+         require(_from != address(0) && _to == address(this));
+         require(mToken.allowance(_from,_to) >= _amount);
+         require(mToken.transferFrom(_from,_to,_amount));
+         SubscriptionDeposited(_from, _to, _amount);
+         return true;
+    }
 ```
 
 ## Built With
