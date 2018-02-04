@@ -71,6 +71,8 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         mProvidersSize = 1;
 	}
 
+    /*external functioins*/
+
     function updateDataSourcePrice(bytes32 _dataSourceName, uint256 _newPrice) 
     external 
     onlyDataProvider(_dataSourceName)
@@ -88,6 +90,13 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         ActivityUpdate(msg.sender, _dataSourceName, _isActive);
         success = true;
     }
+
+    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive){
+        isActive =  mProviders[_dataSourceName].isActive;
+    }
+
+    /* public functions */
+
     function checkAddressSubscription(address _subscriber, bytes32 _dataSourceName) 
     public 
     view 
@@ -123,7 +132,6 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         }
         return (subscriber,_dataSourceName,price,startTime,endTime,isUnExpired,isPaid,isPunishedProvider,isOrder);
     }
-
     function getAllProviders() public view returns (bytes32[]){
         bytes32[] memory names = new bytes32[](mProvidersSize);
         bytes32 iterator = mBegin;
@@ -132,6 +140,29 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
             iterator = mProviders[iterator].nextProvider;
         }
         return names;
+    }
+
+    function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner){
+        owner = mProviders[_dataSourceName].owner;
+    }    
+    function getDataProviderInfo(bytes32 _dataSourceName) 
+    public 
+    view 
+    returns(
+        address owner,
+        uint256 price,
+        uint256 volume,
+        uint256 subscriptionsNum,
+        bool isProvider,
+        bool isActive,
+        bool isPunished){
+        owner = mProviders[_dataSourceName].owner;
+        price = mProviders[_dataSourceName].price;
+        volume = mProviders[_dataSourceName].volume;
+        subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum;
+        isProvider = mProviders[_dataSourceName].isProvider;
+        isActive = mProviders[_dataSourceName].isActive;
+        isPunished = mProviders[_dataSourceName].isPunished;
     }
     function isExpiredSubscription(address _subscriber, bytes32 _dataSourceName) 
     public
@@ -152,33 +183,6 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         }
         isExpired = true;
     }
-    function getDataProviderInfo(bytes32 _dataSourceName) 
-    public 
-    view 
-    returns(
-        address owner,
-        uint256 price,
-        uint256 volume,
-        uint256 subscriptionsNum,
-        bool isProvider,
-        bool isActive,
-        bool isPunished){
-        owner = mProviders[_dataSourceName].owner;
-        price = mProviders[_dataSourceName].price;
-        volume = mProviders[_dataSourceName].volume;
-        subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum;
-        isProvider = mProviders[_dataSourceName].isProvider;
-        isActive = mProviders[_dataSourceName].isActive;
-        isPunished = mProviders[_dataSourceName].isPunished;
-    }
-
-    function isActiveDataSource(bytes32 _dataSourceName) external view returns (bool isActive){
-        isActive =  mProviders[_dataSourceName].isActive;
-    }
-    function getOwnerFromName(bytes32 _dataSourceName) public view returns(address owner){
-        owner = mProviders[_dataSourceName].owner;
-    }
-
 
     /* modifiers */
     modifier validDataProvider(bytes32 _dataSourceName){

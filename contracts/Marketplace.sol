@@ -13,6 +13,8 @@ contract Marketplace is IMarketplace,BasicMarketplace{
 
 	function Marketplace(address _tokenAddress) BasicMarketplace(_tokenAddress) public {}
 
+    /* public*/
+    
     function setPunishProvider(bytes32 _dataSourceName, bool _isPunished) 
     public 
     onlyOwner 
@@ -97,7 +99,6 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         return withdrawAmount;
     }
 
-
     function register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) 
     public
     uniqueDataName(_dataSourceName)
@@ -120,7 +121,6 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         Registered(_dataOwner,_dataSourceName,_price,true);
         success =  true;
     }
-
     function subscribe(bytes32 _dataSourceName) 
     public 
     validDataProvider(_dataSourceName)
@@ -152,6 +152,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         return mToken.balanceOf(this);
     }
     /*internal */
+
     function handleOrderWithdrawCalc(Order order) internal view returns(uint256 orderAmount){
         orderAmount = 0;
         if(!order.isPaid){ // if not paid yet 
