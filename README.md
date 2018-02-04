@@ -2,6 +2,11 @@
 
 The documentation for the Enigma Data Marketplace Smart Contract is available at https://enigmampc.github.io/marketplace/smart-contract.html.
 
+The contract is made out of few smaller contracts. The api is split between 2 interfaces with full documentation:
+
+1. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IBasicMarketplace.sol
+2. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IMarketplace.sol
+
 ## Getting Started
 
 ### Prerequisites
@@ -35,7 +40,13 @@ sudo npm install -g truffle
 
 The tests has to be deployed with an ERC20 Token, the original implementation is in /contracts/token.
 Due to that, the tokens are deployed as well in the migration file.
+There are 2 different tests:
 
+1. Marketplace_Basic.js
+
+2. Marketplace_System_Test.js
+
+Each of the tests can be set to run with the Mock contract (i.e TestableMock.sol) or with the original.
 
 To run Truffle tests
 
@@ -43,15 +54,13 @@ To run Truffle tests
 ```
 truffle test
 ```
-To run system test 
-
-
-```
-node system_node_tests/registration_subscription.js
-```
 
 
 ## Deployment
+
+Migration is made with /migrations/3_deploy_conracts.js
+
+There is an example of the ABI and deployment with pure Web3 that can be found in /scripts/deploy_contract.js
 
 ### Compiling
 
@@ -80,7 +89,7 @@ let EnigmaContract = contract(EnigmaABI);
 let MarketPlaceContract = contract(MarketPlaceABI);
 // Web3
 let Web3 = require('web3');
-let provider = new Web3.providers.HttpProvider("http://localhost:8545");
+let provider = new Web3.providers.HttpProvider("http://localhost:8545"); //8545 // 9545
 let web3 = new Web3(provider);
 EnigmaContract.setProvider(provider);
 MarketPlaceContract.setProvider(provider);
@@ -88,8 +97,74 @@ MarketPlaceContract.setProvider(provider);
 module.exports.enigma = function(){return EnigmaContract.deployed();}
 module.exports.marketPlace = function(){return MarketPlaceContract.deployed();}
 module.exports.web3= web3;
+module.exports.EnigmaContract = EnigmaContract;
+module.exports.MarketPlaceContract = MarketPlaceContract;
 
 ```
+Synchronous Example of Registration and then Subscription.
+The initial balance transfer is only for the test.
+
+```node
+
+const utils = require("./utils");
+const config = require("./config_web3");
+const web3 = config.web3;
+const EnigmaContract = config.EnigmaContract;
+const MarketPlaceContract = config.MarketPlaceContract;
+
+let gas = 740000;
+let theOwner = web3.eth.accounts[0];
+// provider 
+var _provider = {};
+_provider.address = web3.eth.accounts[1];
+_provider.dataName = "Data1";
+_provider.price = 1500;
+//subscriber 
+var _subscriber = {};
+_subscriber.address = web3.eth.accounts[2];
+
+async function transfer(from,to,amount){
+	let enigma = await EnigmaContract.deployed();
+	let tx = await enigma.transfer(to,amount,{from:from});
+	return tx;
+}
+
+async function register(provider){
+	let marketPlace = await MarketPlaceContract.deployed();	
+	let enigma = await EnigmaContract.deployed();
+	let version = await marketPlace.MARKETPLACE_VERSION.call();
+	// register probider 
+	let reg_tx = await marketPlace.register(provider.dataName,provider.price,provider.address,{from:provider.address,gas:gas});
+	// validate
+	let providerInfo = await marketPlace.getDataProviderInfo.call(provider.dataName);
+	return providerInfo;
+}
+
+async function subscribe(provider,subscriber){
+	let marketPlace = await MarketPlaceContract.deployed();	
+	let enigma = await EnigmaContract.deployed();
+	// #1 approve the marketPlace as a spender in EnigmaToken 
+	let tx_app = await enigma.approve(marketPlace.address,provider.price,{from:subscriber.address,gas:gas});
+	// validate allowed amount 
+	let allowed = await enigma.allowance.call(subscriber.address,marketPlace.address); 
+	console.log(allowed.toNumber());
+	// #2 subscribe to marketPlace
+	let tx_sub = await marketPlace.subscribe(provider.dataName,{from:subscriber.address,gas:gas});
+	//validate subscription // subscriber,dataSourceName,price,startTime,endTime,isUnExpired,isPaid,isPunishedProvider,isOrder
+	let subInfo = await marketPlace.checkAddressSubscription.call(subscriber.address,provider.dataName);
+	
+}
+
+// registration + subscription
+transfer(theOwner,_subscriber.address,_provider.price).then(tx=>{
+	register(_provider).then(info=>{
+		subscribe(_provider,_subscriber);
+	});
+});
+
+```
+
+Asynchronous examples:
 
 To register a data source.
 
@@ -97,10 +172,10 @@ To register a data source.
 	var price = 100;
 	var owner = web3.eth.accounts[0];
 	var deployer = web3.eth.accounts[0];
-
+	var gasLimit = 999999;
 	marketPlace().then((instance)=>{
 		contract = instance;
-		return contract.register('data name',price,owner,{from:deployer,gas:999999});
+		return contract.register('data name',price,owner,{from:deployer,gas:gasLimit});
 	});
 ```
 
