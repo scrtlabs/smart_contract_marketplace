@@ -110,10 +110,10 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
         bool isPunishedProvider,
         bool isOrder){
         uint256 size = mOrders[_dataSourceName].length;
-        require(size>0);
         require(address(0) != _subscriber);
         require(mProviders[_dataSourceName].isProvider);
-        for(uint i=size-1;i>=0;i--){
+        if(size > 0){
+            for(uint i=size-1;i>=0;i--){
             if(mOrders[_dataSourceName][i].subscriber == _subscriber){
                 subscriber = mOrders[_dataSourceName][i].subscriber;
                 price = mOrders[_dataSourceName][i].price;
@@ -126,8 +126,9 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
                 i = 0;
                 break;
             }
-            if( i==0 ){
-                break;
+                if( i==0 ){
+                    break;
+                }
             }
         }
         return (subscriber,_dataSourceName,price,startTime,endTime,isUnExpired,isPaid,isPunishedProvider,isOrder);
@@ -170,15 +171,16 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
     returns 
     (bool isExpired){
         uint256 size = mOrders[_dataSourceName].length;
-        require(size>0);
         require(mProviders[_dataSourceName].isProvider);
         require(address(0) != _subscriber);
-        for(uint i=size-1;i>=0;i--){
-            if(mOrders[_dataSourceName][i].subscriber == _subscriber){
-                return now >= mOrders[_dataSourceName][i].endTime;
-            }
-            if( i==0 ){
-                break;
+        if(size>0){
+            for(uint i=size-1;i>=0;i--){
+                if(mOrders[_dataSourceName][i].subscriber == _subscriber){
+                    return now >= mOrders[_dataSourceName][i].endTime;
+                }
+                if( i==0 ){
+                    break;
+                }
             }
         }
         isExpired = true;

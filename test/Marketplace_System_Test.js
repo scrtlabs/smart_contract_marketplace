@@ -288,6 +288,13 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       assert.equal(providerInfo.subscriptionsNum,subsNum,"Subscriptions number not equal");
       assert.equal(providerInfo.volume, subsNum * price , "Volume dont match");
     });
+
+  it("Should check subscription that don't exist",async function(){
+      let randomAddress = '0x5aeda56215b167893e80b4fe645ba6d5bab767de';
+      let marketPlace = await Marketplace.deployed();
+      let sub1 = await marketPlace.checkAddressSubscription.call(randomAddress,data1);
+      assert.equal(parseSubscription(sub1).isOrder,false,"Order exist");
+  });
   //
 });
 
