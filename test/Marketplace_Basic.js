@@ -1,13 +1,14 @@
 var utils = require("../scripts/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
-var Marketplace = artifacts.require("./mocks/TestableMock.sol");
+var Marketplace = artifacts.require("./RecoverableMarketplace.sol");
+//var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
 
 const simple = true;
 const complicated = true;
 const subscriptions = true;
-const mock = true;
+const mock = false;
 contract('Marketplace', function(accounts) {
 
 	const dataSet1 = "Data1";

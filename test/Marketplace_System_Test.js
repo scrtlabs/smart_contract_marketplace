@@ -1,12 +1,13 @@
 
 var utils = require("../scripts/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
-var Marketplace = artifacts.require("./mocks/TestableMock.sol");
+var Marketplace = artifacts.require("./RecoverableMarketplace.sol");
+//var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
 
 const simple = true;
-const mock = true;
+const mock = false;
 const system_test = true;
 
 contract('Marketplace Mock', function(accounts) {
@@ -288,7 +289,7 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       assert.equal(providerInfo.subscriptionsNum,subsNum,"Subscriptions number not equal");
       assert.equal(providerInfo.volume, subsNum * price , "Volume dont match");
     });
-
+  if(simple && system_test && true)
   it("Should check subscription that don't exist",async function(){
       let randomAddress = '0x5aeda56215b167893e80b4fe645ba6d5bab767de';
       let marketPlace = await Marketplace.deployed();

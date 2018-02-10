@@ -40,10 +40,10 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         for(uint i=0; i<size ;i++){
             if(mOrders[_dataSourceName][i].subscriber == msg.sender){
                 uint256 refund = handleOrderRefundCalc(mOrders[_dataSourceName][i]);
-                if(refund > 0){ // mark refund as paid
-                    mOrders[_dataSourceName][i].isRefundPaid = true;
+                if(refund > 0 && !mOrders[_dataSourceName][i].isRefundPaid){ // double check payment
+                    mOrders[_dataSourceName][i].isRefundPaid = true;// mark refund as paid
+                    refundAmount = refundAmount.add(refund);
                 }
-                refundAmount = refundAmount.add(refund);
             }
         }
         require(safeToSubscriberTransfer(msg.sender,refundAmount));
@@ -75,11 +75,11 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         uint orderSize = mOrders[_dataSourceName].length;
         for(uint i=0;i<orderSize;i++){
             uint256 withdraw = handleOrderWithdrawCalc(mOrders[_dataSourceName][i]);
-            if(withdraw > 0){ // mark order as paid 
-                mOrders[_dataSourceName][i].isPaid = true;
+            if(withdraw > 0 && !mOrders[_dataSourceName][i].isPaid){ // double check
+                mOrders[_dataSourceName][i].isPaid = true; // mark order as paid 
+                withdrawAmount = withdrawAmount.add(withdraw); 
             }
-            withdrawAmount = withdrawAmount.add(withdraw); 
-            success = true;
+            
         }
         // transfer ENG's to the provider -revert state if faild
         require(safeToProviderTransfer(_dataSourceName,withdrawAmount)); 

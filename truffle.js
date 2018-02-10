@@ -7,15 +7,16 @@ module.exports = {
     networks: {
     development: {
       host: "127.0.0.1",
-      port:9545,// 9545,//8545,//
-      network_id: "*" // Match any network id
+      port:8545,// 9545,//8545,//
+      network_id: "*", // Match any network id
+      gas: 8000000,
     },
     ropsten: {
       provider: function() {
         return new HDWalletProvider(DummyMnemonic, "https://ropsten.infura.io/0oo5uLogrmd5FxaRoiyK")
       },
       network_id: 3,
-      gas: 999999999999999,
+      gas: 8000000,
     } 
   },
   // solc: {
