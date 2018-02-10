@@ -9,6 +9,7 @@ var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 const simple = true;
 const mock = false;
 const system_test = true;
+const recoverable = true;
 
 contract('Marketplace Mock', function(accounts) {
 const emptyAddress ="0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -32,6 +33,10 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
  const expiredAndPunishedOwner = accounts[4];
  const dataExpiredAndPunished = "ExpiredAndPunished";
  const priceExpiredAndPunished= 100000;
+ // provider recovery 
+ const recoverOwner = accounts[8];
+ const dataRecoverName = "DataRecover";
+ const priceRecover = 2000;
  // subscriber1 
  const subscriber1 = accounts[5]; 
  const initialBal1 = priceExpiredAndPunished *3;
@@ -41,6 +46,9 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
  // subscriber3 
  const subscriberRefund = accounts[7];
  const initialBalRefund = priceExpiredAndPunished *3;
+ // subscriber recover 
+ const subscriberRecover = accounts[9];
+ const initialRecoverBal = priceExpiredAndPunished *3;
  
  if(simple && true)
   it("Should get the correct Marketplace version",()=>{
@@ -95,7 +103,7 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       });
     });
 
- if(simple && mock && system_test && true)
+ if(simple && mock && system_test  && true)
   it("Register (mock) expired data set, refund and withdraw",async function(){
     let withTx = true; // mock function meaninig: do actual token transfer on subscription
     let relativePunish = 2; // meaning => provider got punished half way through the subscription
@@ -295,6 +303,50 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
       let marketPlace = await Marketplace.deployed();
       let sub1 = await marketPlace.checkAddressSubscription.call(randomAddress,data1);
       assert.equal(parseSubscription(sub1).isOrder,false,"Order exist");
+  });
+if(simple && system_test && recoverable && true)
+  it("[Recover] Should get providers size",async function(){
+    let marketPlace = await Marketplace.deployed();
+    let providersSize = await marketPlace.getProviderNamesSize.call();
+    let original = await marketPlace.getAllProviders.call();
+    assert.equal(original.length-1,providersSize.toNumber(),"Providers size not equal");
+  });
+if(simple && system_test && recoverable && true)
+  it("[Recover]Should get Subscription size", async function(){
+    let marketPlace = await Marketplace.deployed();
+    let expectedSize = 10; // loop test
+    let name = "SomeData1";
+    let ordersSize = await marketPlace.getSubscriptionsSize.call(name);
+    assert.equal(ordersSize.toNumber(),expectedSize,"Orders number don't match");
+  });
+if(simple && system_test && recoverable && true)
+  it("[Recover] Should get Provider name at index", async function(){
+    let marketPlace = await Marketplace.deployed();
+    let name = await marketPlace.getNameAt.call(2);
+    assert.equal(data2,utils.toAscii(name),"Names don't equal");
+
+  });
+if(simple && system_test && recoverable && true)
+  it("[Recover] check subscription at",async function(){
+    let marketPlace = await Marketplace.deployed();
+    let subscription = await marketPlace.checkSubscriptionAt.call(data1,0);
+    assert.equal(parseSubscription(subscription).subscriber , subscriber1, "Subscription dont fit");
+    assert.equal(parseSubscription(subscription).isUnExpired, true , "Subscription expiration date incorrect");
+  });
+if(simple && system_test && recoverable && true)
+  it("[Recover] Should check if a subscription is expired", async function(){
+    let marketPlace = await Marketplace.deployed();
+    let isExpired = await marketPlace.isExpiredSubscriptionAt.call(data1,0);
+    assert.equal(isExpired, false, "Subscription expiration incorrect");
+  });
+if(simple && system_test && recoverable && true)
+  it("[Recover] should register a provider",async function(){
+    let marketPlace = await Marketplace.deployed();
+    await marketPlace.register(dataRecoverName,priceRecover,recoverOwner,{from : recoverOwner});
+    let size = await marketPlace.getProviderNamesSize.call();
+    let nameTest = await marketPlace.getNameAt(size.toNumber() -1);
+    assert.equal(utils.toAscii(nameTest), dataRecoverName, "Names dont match");
+
   });
   //
 });

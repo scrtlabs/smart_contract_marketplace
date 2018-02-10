@@ -548,7 +548,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2725,
+          "SourceUnit": 2734,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/SafeMath.sol",
           "file": "./zeppelin-solidity/SafeMath.sol",
           "scope": 743,
@@ -563,7 +563,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2630,
+          "SourceUnit": 2639,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/Ownable.sol",
           "file": "./zeppelin-solidity/Ownable.sol",
           "scope": 743,
@@ -1386,14 +1386,14 @@
         "attributes": {
           "contractDependencies": [
             852,
-            2629
+            2638
           ],
           "contractKind": "contract",
           "documentation": null,
           "fullyImplemented": true,
           "linearizedBaseContracts": [
             742,
-            2629,
+            2638,
             852
           ],
           "name": "BasicMarketplace",
@@ -1434,7 +1434,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "Ownable",
-                  "referencedDeclaration": 2629,
+                  "referencedDeclaration": 2638,
                   "type": "contract Ownable"
                 },
                 "id": 69,
@@ -1452,7 +1452,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 2724,
+                  "referencedDeclaration": 2733,
                   "type": "library SafeMath"
                 },
                 "id": 71,
@@ -1479,7 +1479,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 2724,
+                  "referencedDeclaration": 2733,
                   "type": "library SafeMath"
                 },
                 "id": 74,
@@ -2405,7 +2405,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -3409,7 +3409,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 2736,
+                                  "referencedDeclaration": 2745,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -3825,7 +3825,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 2736,
+                                  "referencedDeclaration": 2745,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -4575,7 +4575,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -4711,7 +4711,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8477,7 +8477,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8583,7 +8583,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9087,7 +9087,7 @@
                                                       "overloadedDeclarations": [
                                                         null
                                                       ],
-                                                      "referencedDeclaration": 2738,
+                                                      "referencedDeclaration": 2747,
                                                       "type": "uint256",
                                                       "value": "now"
                                                     },
@@ -9430,7 +9430,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9536,7 +9536,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9642,7 +9642,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9821,7 +9821,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9935,7 +9935,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -10114,7 +10114,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -10165,7 +10165,7 @@
                                       "isPure": false,
                                       "lValueRequested": false,
                                       "member_name": "add",
-                                      "referencedDeclaration": 2723,
+                                      "referencedDeclaration": 2732,
                                       "type": "function (uint256,uint256) pure returns (uint256)"
                                     },
                                     "children": [
@@ -10323,7 +10323,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -10429,7 +10429,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2739,
+                              "referencedDeclaration": 2748,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -10530,7 +10530,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 2736,
+                                      "referencedDeclaration": 2745,
                                       "type": "msg",
                                       "value": "msg"
                                     },
@@ -10589,5 +10589,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-02-10T01:07:10.711Z"
+  "updatedAt": "2018-02-10T01:21:50.958Z"
 }
