@@ -23,8 +23,10 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         mProviders[_dataSourceName].isPunished = _isPunished;
         if(_isPunished){
             mProviders[_dataSourceName].punishTimeStamp = now;
+            mProviders[_dataSourceName].isActive = false;
         }else{
             mProviders[_dataSourceName].punishTimeStamp = 0;
+            mProviders[_dataSourceName].isActive = true;
         }
         ProviderPunishStatus(mProviders[_dataSourceName].owner,_dataSourceName,_isPunished);
         success = true;
