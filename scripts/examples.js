@@ -54,7 +54,13 @@ async function subscribe(provider,subscriber){
 
 transfer(theOwner,_subscriber.address,_provider.price).then(tx=>{
 	register(_provider).then(info=>{
-		subscribe(_provider,_subscriber);
+		subscribe(_provider,_subscriber).then(async function(){
+			getAllProviders().then(providers=>{
+				getProvidersRecover().then(providers=>{
+					getSubscriptionsOfProviderRecover(providers[0]);
+				});
+			});
+		});
 	});
 });
 
@@ -70,8 +76,32 @@ async function getAllProviders(){
 	return providerInfo;
 }
 
+async function getProvidersRecover(){
+	let providers = [];
+	let marketPlace = await MarketPlaceContract.deployed();	
+	let size = await marketPlace.getProviderNamesSize.call();
+	for(let i=0;i<size.toNumber();++i){
+		let providerName = await marketPlace.getNameAt.call(i);
+		providers.push(providerName);
+		let provider = await marketPlace.getDataProviderInfo.call(web3.toAscii(providerName));
+	}
+	return providers;
+}
+async function getSubscriptionsOfProviderRecover(providerName){
+	let subscriptions = [];
+	let marketPlace = await MarketPlaceContract.deployed();	
+	let size = await marketPlace.getSubscriptionsSize.call(providerName);
+	for(var i=0;i<size.toNumber();i++){
+		let subscription = await marketPlace.checkSubscriptionAt.call(providerName,i);
+		subscription.push(subscription);
+	}
+	return subscriptions;
+}
+
 getAllProviders().then(providers=>{
-	// full list with details provider data.
+	// get all providers.
 });
+
+
 
 
