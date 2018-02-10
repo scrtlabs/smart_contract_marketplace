@@ -1,13 +1,13 @@
 
 var utils = require("../scripts/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
-var Marketplace = artifacts.require("./RecoverableMarketplace.sol");
-//var Marketplace = artifacts.require("./mocks/TestableMock.sol");
+//var Marketplace = artifacts.require("./RecoverableMarketplace.sol");
+var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
 
 const simple = true;
-const mock = false;
+const mock = true;
 const system_test = true;
 const recoverable = true;
 
@@ -37,6 +37,10 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
  const recoverOwner = accounts[8];
  const dataRecoverName = "DataRecover";
  const priceRecover = 2000;
+ // provider mock expired 
+ const expiredRecoverOwner = accounts[8];
+ const dataExpiredRecover = "ExpiredRecover";
+ const priceExpiredRecoverd = 1000;
  // subscriber1 
  const subscriber1 = accounts[5]; 
  const initialBal1 = priceExpiredAndPunished *3;
@@ -67,13 +71,16 @@ const emptyAddress ="0x000000000000000000000000000000000000000000000000000000000
     await enigma.transfer(subscriber1,initialBal1,{from:accounts[0]});
     await enigma.transfer(subscriber2,initialBal1,{from:accounts[0]});
     await enigma.transfer(subscriberRefund,initialBal1,{from:accounts[0]});
+    await enigma.transfer(subscriberRecover,initialRecoverBal,{from:accounts[0]});
     // validate balance 
     let bal1 = await enigma.balanceOf.call(subscriber1);
     let bal2 = await enigma.balanceOf.call(subscriber2);
     let bal3 = await enigma.balanceOf.call(subscriberRefund);
+    let bal4 = await enigma.balanceOf.call(subscriberRecover);
     assert.equal(initialBal1,bal1.toNumber(), "balances not equal");
     assert.equal(initialBal1,bal2.toNumber(), "balances not equal");
     assert.equal(initialBal1,bal3.toNumber(), "balances not equal");
+    assert.equal(initialBal1,bal4.toNumber(), "balances not equal");
   });
   if(simple && system_test && true)
     it("Should register empty name and throw",async function(){
@@ -309,7 +316,11 @@ if(simple && system_test && recoverable && true)
     let marketPlace = await Marketplace.deployed();
     let providersSize = await marketPlace.getProviderNamesSize.call();
     let original = await marketPlace.getAllProviders.call();
-    assert.equal(original.length-1,providersSize.toNumber(),"Providers size not equal");
+    if(mock){
+       assert.equal(original.length-2,providersSize.toNumber(),"Providers size not equal");
+    }else{
+          assert.equal(original.length-1,providersSize.toNumber(),"Providers size not equal");
+    }
   });
 if(simple && system_test && recoverable && true)
   it("[Recover]Should get Subscription size", async function(){
@@ -347,6 +358,64 @@ if(simple && system_test && recoverable && true)
     let nameTest = await marketPlace.getNameAt(size.toNumber() -1);
     assert.equal(utils.toAscii(nameTest), dataRecoverName, "Names dont match");
 
+  });
+if(simple && mock && system_test && recoverable && true)
+  it("[Recover]Register (mock) expired data set, refund and withdraw",async function(){
+    let withTx = true; // mock function meaninig: do actual token transfer on subscription
+    let relativePunish = 2; // meaning => provider got punished half way through the subscription
+    let enigma = await EnigmaToken.deployed();
+    let marketPlace = await Marketplace.deployed();
+    // test regular subscription - not expired and not punished
+    await enigma.approve(marketPlace.address,price1,{from:subscriberRecover});
+    let tx= await marketPlace.subscribe(data1,{from:subscriberRecover}); 
+    // approval ENG with Marketplace protocol
+    await enigma.approve(marketPlace.address,priceExpiredRecoverd,{from:subscriberRecover});
+    // mock => register expired and punished subscription + addsubscriber 
+    await marketPlace.mockPayableProvider(
+          dataExpiredRecover,
+          priceExpiredRecoverd,
+          expiredRecoverOwner,
+          true,
+          relativePunish,
+          withTx,
+          {from:subscriberRecover});
+    // get available withdraw 
+    let subsSize = await marketPlace.getSubscriptionsSize.call(dataExpiredRecover);
+    for(var i=0;i<subsSize.toNumber();++i){
+      let withdraw = await marketPlace.getWithdrawAmountAt.call(dataExpiredRecover,i);
+      assert.equal(withdraw.toNumber(),priceExpiredRecoverd/relativePunish,"Withdraw get not equal");
+    }
+    // get available refund
+    for(var i=0;i<subsSize.toNumber();++i){
+      let subscription = await marketPlace.checkSubscriptionAt.call(dataExpiredRecover,i);
+      let isPunished = parseSubscription(subscription).isPunishedProvider;
+      assert.equal(isPunished,true,"Punishment did not set ");
+      let refund = await marketPlace.getRefundAmountAt.call(dataExpiredRecover,i);
+      assert.equal(refund.toNumber(),priceExpiredRecoverd/relativePunish,"Refund not equal");
+    }
+    // withdraw 
+    await marketPlace.withrawProviderAt(dataExpiredRecover,0,{from:expiredRecoverOwner});
+    let ownerBal = await enigma.balanceOf(expiredRecoverOwner);
+    assert.equal(ownerBal.toNumber(),priceExpiredRecoverd/relativePunish,"provider balance dont match");
+    // refund
+    await marketPlace.refundSubscriberAt(dataExpiredRecover,0,{from:subscriberRecover});
+    let refundBal = await enigma.balanceOf(subscriberRecover);
+    let price1New = 120;
+    assert.equal(refundBal.toNumber(),initialRecoverBal -(priceExpiredRecoverd/relativePunish)-price1New,"Refund balance dont match");
+     // get available withdraw 
+    subsSize = await marketPlace.getSubscriptionsSize.call(dataExpiredRecover);
+    for(var i=0;i<subsSize.toNumber();++i){
+      let withdraw = await marketPlace.getWithdrawAmountAt.call(dataExpiredRecover,i);
+      assert.equal(withdraw.toNumber(),0,"Withdraw get not equal");
+    }
+    // get available refund
+    for(var i=0;i<subsSize.toNumber();++i){
+      let subscription = await marketPlace.checkSubscriptionAt.call(dataExpiredRecover,i);
+      let isPunished = parseSubscription(subscription).isPunishedProvider;
+      assert.equal(isPunished,true,"Punishment did not set ");
+      let refund = await marketPlace.getRefundAmountAt.call(dataExpiredRecover,i);
+      assert.equal(refund.toNumber(),0,"Refund not equal");
+    }
   });
   //
 });

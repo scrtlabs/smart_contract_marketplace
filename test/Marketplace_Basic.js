@@ -1,7 +1,7 @@
 var utils = require("../scripts/utils");
 //var Marketplace = artifacts.require("./Marketplace.sol");
 var Marketplace = artifacts.require("./RecoverableMarketplace.sol");
-//var Marketplace = artifacts.require("./mocks/TestableMock.sol");
+var Marketplace = artifacts.require("./mocks/TestableMock.sol");
 var EnigmaToken = artifacts.require("./token/EnigmaToken.sol");
 
 

@@ -194,7 +194,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2734,
+          "SourceUnit": 2733,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/SafeMath.sol",
           "file": "./zeppelin-solidity/SafeMath.sol",
           "scope": 743,
@@ -209,7 +209,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2639,
+          "SourceUnit": 2638,
           "absolutePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/zeppelin-solidity/Ownable.sol",
           "file": "./zeppelin-solidity/Ownable.sol",
           "scope": 743,
@@ -1032,14 +1032,14 @@
         "attributes": {
           "contractDependencies": [
             852,
-            2638
+            2637
           ],
           "contractKind": "contract",
           "documentation": null,
           "fullyImplemented": true,
           "linearizedBaseContracts": [
             742,
-            2638,
+            2637,
             852
           ],
           "name": "BasicMarketplace",
@@ -1080,7 +1080,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "Ownable",
-                  "referencedDeclaration": 2638,
+                  "referencedDeclaration": 2637,
                   "type": "contract Ownable"
                 },
                 "id": 69,
@@ -1098,7 +1098,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 2733,
+                  "referencedDeclaration": 2732,
                   "type": "library SafeMath"
                 },
                 "id": 71,
@@ -1125,7 +1125,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 2733,
+                  "referencedDeclaration": 2732,
                   "type": "library SafeMath"
                 },
                 "id": 74,
@@ -2051,7 +2051,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -3055,7 +3055,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 2745,
+                                  "referencedDeclaration": 2744,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -3471,7 +3471,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 2745,
+                                  "referencedDeclaration": 2744,
                                   "type": "msg",
                                   "value": "msg"
                                 },
@@ -4221,7 +4221,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -4357,7 +4357,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8123,7 +8123,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8229,7 +8229,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -8733,7 +8733,7 @@
                                                       "overloadedDeclarations": [
                                                         null
                                                       ],
-                                                      "referencedDeclaration": 2747,
+                                                      "referencedDeclaration": 2746,
                                                       "type": "uint256",
                                                       "value": "now"
                                                     },
@@ -9076,7 +9076,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9182,7 +9182,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9288,7 +9288,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9467,7 +9467,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9581,7 +9581,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9760,7 +9760,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -9811,7 +9811,7 @@
                                       "isPure": false,
                                       "lValueRequested": false,
                                       "member_name": "add",
-                                      "referencedDeclaration": 2732,
+                                      "referencedDeclaration": 2731,
                                       "type": "function (uint256,uint256) pure returns (uint256)"
                                     },
                                     "children": [
@@ -9969,7 +9969,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -10075,7 +10075,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 2748,
+                              "referencedDeclaration": 2747,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
@@ -10176,7 +10176,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 2745,
+                                      "referencedDeclaration": 2744,
                                       "type": "msg",
                                       "value": "msg"
                                     },
@@ -10235,5 +10235,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-02-10T01:21:50.969Z"
+  "updatedAt": "2018-02-10T15:34:48.735Z"
 }

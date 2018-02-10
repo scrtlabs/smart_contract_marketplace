@@ -1,15 +1,15 @@
 pragma solidity 0.4.18;
 
 //
-import "../Marketplace.sol";
-//import "../RecoverableMarketplace.sol";
+//import "../Marketplace.sol";
+import "../RecoverableMarketplace.sol";
 /*
 *@title mock MarketPlace contract
 *@dev unit testing 
 */
 
-contract TestableMock is Marketplace{
-    function TestableMock(address _tokenAddress) Marketplace(_tokenAddress){
+contract TestableMock is RecoverableMarketplace {// Marketplace{
+    function TestableMock(address _tokenAddress) RecoverableMarketplace(_tokenAddress){
         
     }
         // mock temp func

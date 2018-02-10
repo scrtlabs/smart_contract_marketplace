@@ -1,9 +1,9 @@
 pragma solidity 0.4.18;
 
 import "./Marketplace.sol";
-//import "./IRecoverableMarketplace.sol";
+import "./IRecoverableMarketplace.sol";
 
-contract RecoverableMarketplace is Marketplace{// IRecoverableMarketplace, Marketplace{
+contract RecoverableMarketplace is IRecoverableMarketplace, Marketplace{
 	bytes32[] public mNames;
     function RecoverableMarketplace(address _tokenAddress) Marketplace(_tokenAddress) public {}
 	/* Subscriptions */
