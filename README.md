@@ -82,7 +82,7 @@ Web3 connection:
 ```node
 
 let EnigmaABI = require("../build/contracts/EnigmaToken.json");
-let MarketPlaceABI = require ("../build/contracts/Marketplace.json");
+let MarketPlaceABI = require ("../build/contracts/RecoverableMarketplace.json");
 let contract = require('truffle-contract');
 // contracts
 let EnigmaContract = contract(EnigmaABI);
@@ -94,8 +94,6 @@ let web3 = new Web3(provider);
 EnigmaContract.setProvider(provider);
 MarketPlaceContract.setProvider(provider);
 
-module.exports.enigma = function(){return EnigmaContract.deployed();}
-module.exports.marketPlace = function(){return MarketPlaceContract.deployed();}
 module.exports.web3= web3;
 module.exports.EnigmaContract = EnigmaContract;
 module.exports.MarketPlaceContract = MarketPlaceContract;
@@ -112,7 +110,7 @@ const web3 = config.web3;
 const EnigmaContract = config.EnigmaContract;
 const MarketPlaceContract = config.MarketPlaceContract;
 
-let gas = 740000;
+let gas = 740000; // some gas limit
 let theOwner = web3.eth.accounts[0];
 // provider 
 var _provider = {};
@@ -194,7 +192,7 @@ To register a data source.
 	var price = 100;
 	var owner = web3.eth.accounts[0];
 	var deployer = web3.eth.accounts[0];
-	var gasLimit = 999999;
+	var gasLimit = 999999; // some gas limit
 	marketPlace().then((instance)=>{
 		contract = instance;
 		return contract.register('data name',price,owner,{from:deployer,gas:gasLimit});
@@ -246,6 +244,109 @@ will run the payment process and trigger a SubscriptionPaid() event.
     }
 ```
 
+### Recovery/Low gas Examples:
+
+The following snippets are examples of how to work with loops outside the chain.
+The examples are implemented synchronously for readability purposes. 
+
+```node
+// get the providers number
+async function getProvidersSize(){
+	let marketPlace = await marketPlace.deployed();
+	let providersNumber = await marketPlace.getProviderNamesSize.call();
+	return providersNumber.toNumber();
+}
+```
+
+```node
+// loop through all the providers name 
+async function getAllNames(providersSize){
+	var providersNames = [];
+	let marketPlace = await marketPlace.deployed();
+	for(var i=0; i<providersSize;i++){
+		let name = await marketPlace.getNameAt.call(i);
+		providersNames.push(name);
+	}
+	return providersNames;
+}
+```
+
+```node
+//loop through all the providers details
+async function getAllProviders(providersNames){
+	var providersDetails = [];
+	let marketPlace = await marketPlace.deployed();
+	for(var i=0; i< providersNames.length;i++){
+		let provider = await marketPlace.getDataProviderInfo.call(providersNames[i]); 
+		providersDetails.push({name:providersNames[i], info: provider});
+	}
+}
+```
+
+```node
+// withdraw funds 
+async function withdrawFunds(providerName, owner, gas){
+	let marketPlace = await marketPlace.deployed();
+	let subscriptionsNumber = await marketPlace.getSubscriptionsSize.call(providerName);
+	for(var i=0;i<subscriptionsNumber.toNumber();i++){
+		let withdraw = await marketPlace.getWithdrawAmountAt.call(providerName,i);
+		if(withdraw.toNumber() > 0){
+			let tx = await marketPlace.withrawProviderAt(providerName,i,{from:owner,gas:gas});
+		}
+	}
+}
+```
+
+```node
+// refund subscriber
+async function refundSubscriber(providerName, subscriber, gas){
+	let marketPlace = await marketPlace.deployed();
+	let subscriptionsNumber = await marketPlace.getSubscriptionsSize.call(providerName);
+	for(var i = subscriptionsNumber.toNumber(); i>=0 ; i--){
+		let subscription = await marketPlace.checkSubscriptionAt.call(providerName,i);
+		if(subscription[0] == subscriber){ //0 is the index of the subscriber address
+			let refund = await marketPlace.getRefundAmountAt.call(providerName,i);
+			if(refund > 0){
+				let tx = await marketPlace.refundSubscriberAt(providerName,i,{from:subscriber,gas:gas});
+			}
+		}
+	}
+}
+```
+
+```node
+// is expired subscription
+async function isSubscriptionExpired(prodiverName, index){
+	let marketPlace = await marketPlace.deployed();
+	let isExpired = await marketPlace.isExpiredSubscriptionAt.call(providerName,index);
+	return isExpired;
+}
+```
+
+```node
+// general function - traverse all orders and do something
+async function forEachSubscription(providerName,callback){
+	let marketPlace = await marketPlace.deployed();
+	let subscriptionsNumber = await marketPlace.getSubscriptionsSize.call(providerName);
+	for(var i = subscriptionsNumber.toNumber(); i>=0 ; i--){
+		let subscription = await marketPlace.checkSubscriptionAt.call(providerName,i);
+		callback(subscription);
+	}
+}
+```
+
+```node
+// general function - traverse all providers and do something 
+async function forEachProvider(callback){
+	let marketPlace = await marketPlace.deployed();
+	let size = await marketPlace.getProviderNamesSize.call();
+	for(var i =0; i<size.toNumber();i++){
+		let name = await marketPlace.getNameAt.call(i);
+		let provider = await marketPlace.getDataProviderInfo.call(providersNames[i]); 
+		callback({name:name, info:provider});
+	}
+}
+```
 ## Built With
 
 * [Ganache](http://truffleframework.com/ganache/) -Test network
