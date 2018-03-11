@@ -1,5 +1,4 @@
-pragma solidity 0.4.18;
-
+pragma solidity ^0.4.21;
 import "./zeppelin-solidity/SafeMath.sol";
 import "./zeppelin-solidity/Ownable.sol";
 import "./IBasicMarketplace.sol";
@@ -79,7 +78,7 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
     validPrice(_newPrice)
     returns (bool success){
         mProviders[_dataSourceName].price = _newPrice;
-        PriceUpdate(msg.sender, _dataSourceName,_newPrice);
+        emit PriceUpdate(msg.sender, _dataSourceName,_newPrice);
         success = true;
     }
     function changeDataSourceActivityStatus(bytes32 _dataSourceName,bool _isActive) 
@@ -87,7 +86,7 @@ contract BasicMarketplace is IBasicMarketplace,Ownable{
     onlyDataProvider(_dataSourceName) 
     returns (bool success){
         mProviders[_dataSourceName].isActive = _isActive;
-        ActivityUpdate(msg.sender, _dataSourceName, _isActive);
+        emit ActivityUpdate(msg.sender, _dataSourceName, _isActive);
         success = true;
     }
 

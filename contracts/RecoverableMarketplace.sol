@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity ^0.4.21;
 
 import "./Marketplace.sol";
 import "./IRecoverableMarketplace.sol";
@@ -9,6 +9,7 @@ contract RecoverableMarketplace is IRecoverableMarketplace, Marketplace{
 	/* Subscriptions */
     function refundSubscriberAt(bytes32 _dataSourceName, uint256 _index)
     public 
+    isValidIndex(_dataSourceName,_index)
     onlySubscriber(_dataSourceName,_index)
     returns
     (bool success){
@@ -20,7 +21,7 @@ contract RecoverableMarketplace is IRecoverableMarketplace, Marketplace{
         mOrders[_dataSourceName][_index].isRefundPaid = true;// mark refund as paid
         // transfer ENG to subscriber - revert if failed
         require(safeToSubscriberTransfer(msg.sender,refundAmount));
-        SubscriberRefund(msg.sender,_dataSourceName,refundAmount);
+        emit SubscriberRefund(msg.sender,_dataSourceName,refundAmount);
         success = true;
     }
     function getRefundAmountAt(bytes32 _dataSourceName,uint256 _index) 
@@ -82,9 +83,9 @@ contract RecoverableMarketplace is IRecoverableMarketplace, Marketplace{
     }
     function withrawProviderAt(bytes32 _dataSourceName, uint256 _index) 
     public 
+    isValidIndex(_dataSourceName, _index)
     onlyDataProvider(_dataSourceName) 
     returns(bool success){
-        require(0 <= _index && _index <= mOrders[_dataSourceName].length);
         uint256 withdrawAmount = 0;
         withdrawAmount = handleOrderWithdrawCalc(mOrders[_dataSourceName][_index]);
         require(withdrawAmount > 0);
@@ -92,7 +93,7 @@ contract RecoverableMarketplace is IRecoverableMarketplace, Marketplace{
         mOrders[_dataSourceName][_index].isPaid = true;
         // transfer ENG's to the provider -revert state if faild
         require(safeToProviderTransfer(_dataSourceName,withdrawAmount)); 
-        ProviderWithdraw(mProviders[_dataSourceName].owner,_dataSourceName,withdrawAmount);
+        emit ProviderWithdraw(mProviders[_dataSourceName].owner,_dataSourceName,withdrawAmount);
         success = true;
     }
     function getWithdrawAmountAt(bytes32 _dataSourceName, uint256 _index) 
@@ -114,8 +115,11 @@ contract RecoverableMarketplace is IRecoverableMarketplace, Marketplace{
 	}
     /* modifiers */
     modifier onlySubscriber(bytes32 _dataSourceName, uint256 _index){
-        require(0 <= _index && _index <= mOrders[_dataSourceName].length);
         require(mOrders[_dataSourceName][_index].subscriber == msg.sender);
+        _;
+    }
+    modifier isValidIndex(bytes32 _dataSourceName, uint256 _index){
+        require(0 <= _index && _index <= mOrders[_dataSourceName].length);
         _;
     }
 

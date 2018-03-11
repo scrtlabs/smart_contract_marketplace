@@ -1,5 +1,4 @@
-pragma solidity 0.4.18;
-
+pragma solidity ^0.4.21;
 /*
 *@title MarketPlace interface
 *@dev This is the interface of the marketplace contract for enigma.

@@ -338,7 +338,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity 0.4.18;\n\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IMarketplace{\n\n\t/**\n\t*@dev used by users who would like to use and pay a data provider. \n\t*@param _dataSourceName chosen data source name.\n\t*@return bool true of successful. \n\t*/\n\tfunction subscribe(bytes32 _dataSourceName) public returns (bool success);\n\t/**\n\t*@dev for data providers to list their data set. \n\t*@param _dataSourceName the unique name that will be used for listing the data set\n\t*@param _price the subscription price \n\t*@paran _dataOwner the account that will get paid and owns the data.\n\t*@return true if success.\n\t*/\n\tfunction register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);\n\t/**\n\t*@dev change the punishment status of a provider, defaults to false (not punished)\n\t*@param _dataSourceName - the provider \n\t*@param _isPunished - true = punish , false = not punished\n\t*@return bool - successful transaction \n\t*/\n\tfunction setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);\n\t/**\n\t*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request \n\t*@return uint256 total balance in ENG tokens  \n\t*/\n\tfunction getMarketplaceTotalBalance() public view returns (uint256 totalBalance);\n\t/**\n\t*@dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)\n\t*@param _dataSourceName - the data source name \n\t*@return success - true if happend false otherwise.\n\t*/\n\tfunction refundSubscriber(bytes32 _dataSourceName) public returns(bool success);\n\t/**\n\t*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\n\t*transfering to the owner registred wallet. can be activated only with the owners wallet.\n\t*@param _dataSourceName - the name of the data source \n\t*@return bool success - true if transferd false otherwise\n\t*/\n\tfunction withdrawProvider(bytes32 _dataSourceName) public returns (bool success);\n\t/**\n\t@dev get the withdraw amount of a provider (not transfering)\n\t@param _dataSourceName - the name of the data source \n\t@return withdrawAmount - total amount that can be withdrawed\n\t*/\n\tfunction getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);\n\t/**\n\t*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)\n\t*@param _susbcriber the subscriber address\n\t*@param _dataSourceName the name of the data provider \n\t*@return refundAmount - total amount that can be refunded\n\t*/\n\tfunction getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);\n\t/*********** Events ************/\n\t\n\t/**\n\t*@dev When data provider finishes registration in the contract\n\t*@param dataOwner the owner of the data\n\t*@param dataSourceName the new name registred\n\t*@param price the price for subscription\n\t*@param true if registred successfully\n\t*/\n\tevent Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);\n\t/**\n\t*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\n\t*@param from who paid\n\t*@param to the data source owner\n\t*@param value the value that was transfered\n\t*/\n\tevent SubscriptionDeposited(address indexed from, address indexed to, uint256 value);\n\t/**\n\t*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\n\t*@param subscriber who subscribed\n\t*@param dataSourceName the data source name\n\t*@param dataOwner the owner of the data source\n\t*@param price the price paid for subscription\n\t*@param success true if subscribed successfully\n\t*/\n\tevent Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);\n\t/**\n\t*@dev triggerd upon a token transfer to provider (before finishing state update)\n\t*@param dataOwner - the owner that got paid \n\t*@param dataSourceName - the name of the data source\n\t*@param amount - the amount transferd from the marketplace contract to the provider\n\t*/\n\tevent TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);\n\t/**\n\t*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\n\t*@param dataOwner - the owner that withdrawed\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount withdrawed\n\t*/\n\tevent ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);\n    /**\n\t*@dev triggerd when punishment status changed (true = punished, false = not punished)\n\t*@param dataOwner - the provider \n\t*@param dataSourceName - the name of the data source \n\t*@param isPunished - the status current status AFTER the change\n    */\n    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);\n\t/**\n\t*@dev triggerd when the subscriber got a refund (punished provider)\n\t*@param subscriber - the refunded address\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount of the refund\n\t*/\n    event SubscriberRefund(address indexed subscriber,bytes32 indexed dataSourceName, uint256 refundAmount);\n}",
+  "source": "//pragma solidity 0.4.18;\npragma solidity ^0.4.21;\n/*\n*@title MarketPlace interface\n*@dev This is the interface of the marketplace contract for enigma.\n*/\ncontract IMarketplace{\n\n\t/**\n\t*@dev used by users who would like to use and pay a data provider. \n\t*@param _dataSourceName chosen data source name.\n\t*@return bool true of successful. \n\t*/\n\tfunction subscribe(bytes32 _dataSourceName) public returns (bool success);\n\t/**\n\t*@dev for data providers to list their data set. \n\t*@param _dataSourceName the unique name that will be used for listing the data set\n\t*@param _price the subscription price \n\t*@paran _dataOwner the account that will get paid and owns the data.\n\t*@return true if success.\n\t*/\n\tfunction register(bytes32 _dataSourceName, uint256 _price, address _dataOwner) public returns (bool success);\n\t/**\n\t*@dev change the punishment status of a provider, defaults to false (not punished)\n\t*@param _dataSourceName - the provider \n\t*@param _isPunished - true = punish , false = not punished\n\t*@return bool - successful transaction \n\t*/\n\tfunction setPunishProvider(bytes32 _dataSourceName, bool _isPunished) public returns (bool success);\n\t/**\n\t*@dev get the current ENG balance of the contract -> dynamiclly calculated upon request \n\t*@return uint256 total balance in ENG tokens  \n\t*/\n\tfunction getMarketplaceTotalBalance() public view returns (uint256 totalBalance);\n\t/**\n\t*@dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)\n\t*@param _dataSourceName - the data source name \n\t*@return success - true if happend false otherwise.\n\t*/\n\tfunction refundSubscriber(bytes32 _dataSourceName) public returns(bool success);\n\t/**\n\t*@dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\n\t*transfering to the owner registred wallet. can be activated only with the owners wallet.\n\t*@param _dataSourceName - the name of the data source \n\t*@return bool success - true if transferd false otherwise\n\t*/\n\tfunction withdrawProvider(bytes32 _dataSourceName) public returns (bool success);\n\t/**\n\t@dev get the withdraw amount of a provider (not transfering)\n\t@param _dataSourceName - the name of the data source \n\t@return withdrawAmount - total amount that can be withdrawed\n\t*/\n\tfunction getWithdrawAmount(bytes32 _dataSourceName) public view returns(uint256 withdrawAmount);\n\t/**\n\t*@dev get the available refund (punished providers) amount for a subscriber. (not transfering)\n\t*@param _susbcriber the subscriber address\n\t*@param _dataSourceName the name of the data provider \n\t*@return refundAmount - total amount that can be refunded\n\t*/\n\tfunction getRefundAmount(address _subscriber , bytes32 _dataSourceName) public view returns(uint256 refundAmount);\n\t/*********** Events ************/\n\t\n\t/**\n\t*@dev When data provider finishes registration in the contract\n\t*@param dataOwner the owner of the data\n\t*@param dataSourceName the new name registred\n\t*@param price the price for subscription\n\t*@param true if registred successfully\n\t*/\n\tevent Registered(address indexed dataOwner, bytes32 indexed dataSourceName, uint price, bool success);\n\t/**\n\t*@dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\n\t*@param from who paid\n\t*@param to the data source owner\n\t*@param value the value that was transfered\n\t*/\n\tevent SubscriptionDeposited(address indexed from, address indexed to, uint256 value);\n\t/**\n\t*@dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\n\t*@param subscriber who subscribed\n\t*@param dataSourceName the data source name\n\t*@param dataOwner the owner of the data source\n\t*@param price the price paid for subscription\n\t*@param success true if subscribed successfully\n\t*/\n\tevent Subscribed(address indexed subscriber,bytes32 indexed dataSourceName, address indexed dataOwner, uint price, bool success);\n\t/**\n\t*@dev triggerd upon a token transfer to provider (before finishing state update)\n\t*@param dataOwner - the owner that got paid \n\t*@param dataSourceName - the name of the data source\n\t*@param amount - the amount transferd from the marketplace contract to the provider\n\t*/\n\tevent TransferToProvider(address indexed dataOwner, bytes32 indexed dataSourceName, uint256 amount);\n\t/**\n\t*@dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\n\t*@param dataOwner - the owner that withdrawed\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount withdrawed\n\t*/\n\tevent ProviderWithdraw(address indexed dataOwner, bytes32 indexed dataSourceName, uint amount);\n    /**\n\t*@dev triggerd when punishment status changed (true = punished, false = not punished)\n\t*@param dataOwner - the provider \n\t*@param dataSourceName - the name of the data source \n\t*@param isPunished - the status current status AFTER the change\n    */\n    event ProviderPunishStatus(address indexed dataOwner, bytes32 indexed dataSourceName, bool isPunished);\n\t/**\n\t*@dev triggerd when the subscriber got a refund (punished provider)\n\t*@param subscriber - the refunded address\n\t*@param dataSourceName - name of the data source\n\t*@param amount - the amount of the refund\n\t*/\n    event SubscriberRefund(address indexed subscriber,bytes32 indexed dataSourceName, uint256 refundAmount);\n}",
   "sourcePath": "/home/wilder/Desktop/Enigma/DataMarketProject/marketPlace_WS/smart_contract_marketplace/contracts/IMarketplace.sol",
   "ast": {
     "attributes": {
@@ -354,13 +354,14 @@
         "attributes": {
           "literals": [
             "solidity",
+            "^",
             "0.4",
-            ".18"
+            ".21"
           ]
         },
         "id": 854,
         "name": "PragmaDirective",
-        "src": "0:23:2"
+        "src": "26:24:2"
       },
       {
         "attributes": {
@@ -384,6 +385,7 @@
             "attributes": {
               "body": null,
               "constant": false,
+              "documentation": "dev used by users who would like to use and pay a data provider. \nparam _dataSourceName chosen data source name.\nreturn bool true of successful. ",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -418,17 +420,17 @@
                         },
                         "id": 855,
                         "name": "ElementaryTypeName",
-                        "src": "337:7:2"
+                        "src": "363:7:2"
                       }
                     ],
                     "id": 856,
                     "name": "VariableDeclaration",
-                    "src": "337:23:2"
+                    "src": "363:23:2"
                   }
                 ],
                 "id": 857,
                 "name": "ParameterList",
-                "src": "336:25:2"
+                "src": "362:25:2"
               },
               {
                 "children": [
@@ -451,27 +453,28 @@
                         },
                         "id": 858,
                         "name": "ElementaryTypeName",
-                        "src": "378:4:2"
+                        "src": "404:4:2"
                       }
                     ],
                     "id": 859,
                     "name": "VariableDeclaration",
-                    "src": "378:12:2"
+                    "src": "404:12:2"
                   }
                 ],
                 "id": 860,
                 "name": "ParameterList",
-                "src": "377:14:2"
+                "src": "403:14:2"
               }
             ],
             "id": 861,
             "name": "FunctionDefinition",
-            "src": "318:74:2"
+            "src": "344:74:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": false,
+              "documentation": "dev for data providers to list their data set. \nparam _dataSourceName the unique name that will be used for listing the data set\nparam _price the subscription price \nparan _dataOwner the account that will get paid and owns the data.\nreturn true if success.",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -481,7 +484,7 @@
               "payable": false,
               "scope": 979,
               "stateMutability": "nonpayable",
-              "superFunction": 1051,
+              "superFunction": null,
               "visibility": "public"
             },
             "children": [
@@ -506,12 +509,12 @@
                         },
                         "id": 862,
                         "name": "ElementaryTypeName",
-                        "src": "693:7:2"
+                        "src": "719:7:2"
                       }
                     ],
                     "id": 863,
                     "name": "VariableDeclaration",
-                    "src": "693:23:2"
+                    "src": "719:23:2"
                   },
                   {
                     "attributes": {
@@ -532,12 +535,12 @@
                         },
                         "id": 864,
                         "name": "ElementaryTypeName",
-                        "src": "718:7:2"
+                        "src": "744:7:2"
                       }
                     ],
                     "id": 865,
                     "name": "VariableDeclaration",
-                    "src": "718:14:2"
+                    "src": "744:14:2"
                   },
                   {
                     "attributes": {
@@ -558,17 +561,17 @@
                         },
                         "id": 866,
                         "name": "ElementaryTypeName",
-                        "src": "734:7:2"
+                        "src": "760:7:2"
                       }
                     ],
                     "id": 867,
                     "name": "VariableDeclaration",
-                    "src": "734:18:2"
+                    "src": "760:18:2"
                   }
                 ],
                 "id": 868,
                 "name": "ParameterList",
-                "src": "692:61:2"
+                "src": "718:61:2"
               },
               {
                 "children": [
@@ -591,27 +594,28 @@
                         },
                         "id": 869,
                         "name": "ElementaryTypeName",
-                        "src": "770:4:2"
+                        "src": "796:4:2"
                       }
                     ],
                     "id": 870,
                     "name": "VariableDeclaration",
-                    "src": "770:12:2"
+                    "src": "796:12:2"
                   }
                 ],
                 "id": 871,
                 "name": "ParameterList",
-                "src": "769:14:2"
+                "src": "795:14:2"
               }
             ],
             "id": 872,
             "name": "FunctionDefinition",
-            "src": "675:109:2"
+            "src": "701:109:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": false,
+              "documentation": "dev change the punishment status of a provider, defaults to false (not punished)\nparam _dataSourceName - the provider \nparam _isPunished - true = punish , false = not punished\nreturn bool - successful transaction ",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -646,12 +650,12 @@
                         },
                         "id": 873,
                         "name": "ElementaryTypeName",
-                        "src": "1048:7:2"
+                        "src": "1074:7:2"
                       }
                     ],
                     "id": 874,
                     "name": "VariableDeclaration",
-                    "src": "1048:23:2"
+                    "src": "1074:23:2"
                   },
                   {
                     "attributes": {
@@ -672,17 +676,17 @@
                         },
                         "id": 875,
                         "name": "ElementaryTypeName",
-                        "src": "1073:4:2"
+                        "src": "1099:4:2"
                       }
                     ],
                     "id": 876,
                     "name": "VariableDeclaration",
-                    "src": "1073:16:2"
+                    "src": "1099:16:2"
                   }
                 ],
                 "id": 877,
                 "name": "ParameterList",
-                "src": "1047:43:2"
+                "src": "1073:43:2"
               },
               {
                 "children": [
@@ -705,27 +709,28 @@
                         },
                         "id": 878,
                         "name": "ElementaryTypeName",
-                        "src": "1107:4:2"
+                        "src": "1133:4:2"
                       }
                     ],
                     "id": 879,
                     "name": "VariableDeclaration",
-                    "src": "1107:12:2"
+                    "src": "1133:12:2"
                   }
                 ],
                 "id": 880,
                 "name": "ParameterList",
-                "src": "1106:14:2"
+                "src": "1132:14:2"
               }
             ],
             "id": 881,
             "name": "FunctionDefinition",
-            "src": "1021:100:2"
+            "src": "1047:100:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": true,
+              "documentation": "dev get the current ENG balance of the contract -> dynamiclly calculated upon request \nreturn uint256 total balance in ENG tokens  ",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -748,7 +753,7 @@
                 "children": [],
                 "id": 882,
                 "name": "ParameterList",
-                "src": "1305:2:2"
+                "src": "1331:2:2"
               },
               {
                 "children": [
@@ -771,27 +776,28 @@
                         },
                         "id": 883,
                         "name": "ElementaryTypeName",
-                        "src": "1329:7:2"
+                        "src": "1355:7:2"
                       }
                     ],
                     "id": 884,
                     "name": "VariableDeclaration",
-                    "src": "1329:20:2"
+                    "src": "1355:20:2"
                   }
                 ],
                 "id": 885,
                 "name": "ParameterList",
-                "src": "1328:22:2"
+                "src": "1354:22:2"
               }
             ],
             "id": 886,
             "name": "FunctionDefinition",
-            "src": "1270:81:2"
+            "src": "1296:81:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": false,
+              "documentation": "dev get refund of the ENG tokens from the contract to the Subscriber (Punished providers)\nparam _dataSourceName - the data source name \nreturn success - true if happend false otherwise.",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -826,17 +832,17 @@
                         },
                         "id": 887,
                         "name": "ElementaryTypeName",
-                        "src": "1583:7:2"
+                        "src": "1609:7:2"
                       }
                     ],
                     "id": 888,
                     "name": "VariableDeclaration",
-                    "src": "1583:23:2"
+                    "src": "1609:23:2"
                   }
                 ],
                 "id": 889,
                 "name": "ParameterList",
-                "src": "1582:25:2"
+                "src": "1608:25:2"
               },
               {
                 "children": [
@@ -859,27 +865,28 @@
                         },
                         "id": 890,
                         "name": "ElementaryTypeName",
-                        "src": "1623:4:2"
+                        "src": "1649:4:2"
                       }
                     ],
                     "id": 891,
                     "name": "VariableDeclaration",
-                    "src": "1623:12:2"
+                    "src": "1649:12:2"
                   }
                 ],
                 "id": 892,
                 "name": "ParameterList",
-                "src": "1622:14:2"
+                "src": "1648:14:2"
               }
             ],
             "id": 893,
             "name": "FunctionDefinition",
-            "src": "1557:80:2"
+            "src": "1583:80:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": false,
+              "documentation": "dev withdraw the ENG tokens from the contract to the Provider. a transaction is made.\nransfering to the owner registred wallet. can be activated only with the owners wallet.\nparam _dataSourceName - the name of the data source \nreturn bool success - true if transferd false otherwise",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -914,17 +921,17 @@
                         },
                         "id": 894,
                         "name": "ElementaryTypeName",
-                        "src": "1969:7:2"
+                        "src": "1995:7:2"
                       }
                     ],
                     "id": 895,
                     "name": "VariableDeclaration",
-                    "src": "1969:23:2"
+                    "src": "1995:23:2"
                   }
                 ],
                 "id": 896,
                 "name": "ParameterList",
-                "src": "1968:25:2"
+                "src": "1994:25:2"
               },
               {
                 "children": [
@@ -947,27 +954,28 @@
                         },
                         "id": 897,
                         "name": "ElementaryTypeName",
-                        "src": "2010:4:2"
+                        "src": "2036:4:2"
                       }
                     ],
                     "id": 898,
                     "name": "VariableDeclaration",
-                    "src": "2010:12:2"
+                    "src": "2036:12:2"
                   }
                 ],
                 "id": 899,
                 "name": "ParameterList",
-                "src": "2009:14:2"
+                "src": "2035:14:2"
               }
             ],
             "id": 900,
             "name": "FunctionDefinition",
-            "src": "1943:81:2"
+            "src": "1969:81:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": true,
+              "documentation": "@dev get the withdraw amount of a provider (not transfering)\n@param _dataSourceName - the name of the data source \n@return withdrawAmount - total amount that can be withdrawed",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -1002,17 +1010,17 @@
                         },
                         "id": 901,
                         "name": "ElementaryTypeName",
-                        "src": "2241:7:2"
+                        "src": "2267:7:2"
                       }
                     ],
                     "id": 902,
                     "name": "VariableDeclaration",
-                    "src": "2241:23:2"
+                    "src": "2267:23:2"
                   }
                 ],
                 "id": 903,
                 "name": "ParameterList",
-                "src": "2240:25:2"
+                "src": "2266:25:2"
               },
               {
                 "children": [
@@ -1035,27 +1043,28 @@
                         },
                         "id": 904,
                         "name": "ElementaryTypeName",
-                        "src": "2286:7:2"
+                        "src": "2312:7:2"
                       }
                     ],
                     "id": 905,
                     "name": "VariableDeclaration",
-                    "src": "2286:22:2"
+                    "src": "2312:22:2"
                   }
                 ],
                 "id": 906,
                 "name": "ParameterList",
-                "src": "2285:24:2"
+                "src": "2311:24:2"
               }
             ],
             "id": 907,
             "name": "FunctionDefinition",
-            "src": "2214:96:2"
+            "src": "2240:96:2"
           },
           {
             "attributes": {
               "body": null,
               "constant": true,
+              "documentation": "dev get the available refund (punished providers) amount for a subscriber. (not transfering)\nparam _susbcriber the subscriber address\nparam _dataSourceName the name of the data provider \nreturn refundAmount - total amount that can be refunded",
               "implemented": false,
               "isConstructor": false,
               "modifiers": [
@@ -1090,12 +1099,12 @@
                         },
                         "id": 908,
                         "name": "ElementaryTypeName",
-                        "src": "2601:7:2"
+                        "src": "2627:7:2"
                       }
                     ],
                     "id": 909,
                     "name": "VariableDeclaration",
-                    "src": "2601:19:2"
+                    "src": "2627:19:2"
                   },
                   {
                     "attributes": {
@@ -1116,17 +1125,17 @@
                         },
                         "id": 910,
                         "name": "ElementaryTypeName",
-                        "src": "2623:7:2"
+                        "src": "2649:7:2"
                       }
                     ],
                     "id": 911,
                     "name": "VariableDeclaration",
-                    "src": "2623:23:2"
+                    "src": "2649:23:2"
                   }
                 ],
                 "id": 912,
                 "name": "ParameterList",
-                "src": "2600:47:2"
+                "src": "2626:47:2"
               },
               {
                 "children": [
@@ -1149,26 +1158,27 @@
                         },
                         "id": 913,
                         "name": "ElementaryTypeName",
-                        "src": "2668:7:2"
+                        "src": "2694:7:2"
                       }
                     ],
                     "id": 914,
                     "name": "VariableDeclaration",
-                    "src": "2668:20:2"
+                    "src": "2694:20:2"
                   }
                 ],
                 "id": 915,
                 "name": "ParameterList",
-                "src": "2667:22:2"
+                "src": "2693:22:2"
               }
             ],
             "id": 916,
             "name": "FunctionDefinition",
-            "src": "2576:114:2"
+            "src": "2602:114:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev When data provider finishes registration in the contract\nparam dataOwner the owner of the data\nparam dataSourceName the new name registred\nparam price the price for subscription\nparam true if registred successfully",
               "name": "Registered"
             },
             "children": [
@@ -1194,12 +1204,12 @@
                         },
                         "id": 917,
                         "name": "ElementaryTypeName",
-                        "src": "2989:7:2"
+                        "src": "3015:7:2"
                       }
                     ],
                     "id": 918,
                     "name": "VariableDeclaration",
-                    "src": "2989:25:2"
+                    "src": "3015:25:2"
                   },
                   {
                     "attributes": {
@@ -1221,12 +1231,12 @@
                         },
                         "id": 919,
                         "name": "ElementaryTypeName",
-                        "src": "3016:7:2"
+                        "src": "3042:7:2"
                       }
                     ],
                     "id": 920,
                     "name": "VariableDeclaration",
-                    "src": "3016:30:2"
+                    "src": "3042:30:2"
                   },
                   {
                     "attributes": {
@@ -1248,12 +1258,12 @@
                         },
                         "id": 921,
                         "name": "ElementaryTypeName",
-                        "src": "3048:4:2"
+                        "src": "3074:4:2"
                       }
                     ],
                     "id": 922,
                     "name": "VariableDeclaration",
-                    "src": "3048:10:2"
+                    "src": "3074:10:2"
                   },
                   {
                     "attributes": {
@@ -1275,26 +1285,27 @@
                         },
                         "id": 923,
                         "name": "ElementaryTypeName",
-                        "src": "3060:4:2"
+                        "src": "3086:4:2"
                       }
                     ],
                     "id": 924,
                     "name": "VariableDeclaration",
-                    "src": "3060:12:2"
+                    "src": "3086:12:2"
                   }
                 ],
                 "id": 925,
                 "name": "ParameterList",
-                "src": "2988:85:2"
+                "src": "3014:85:2"
               }
             ],
             "id": 926,
             "name": "EventDefinition",
-            "src": "2972:102:2"
+            "src": "2998:102:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev an event that indicates that someone has paid the Marketplace contract subscription (before that data is updated in the contract)\nparam from who paid\nparam to the data source owner\nparam value the value that was transfered",
               "name": "SubscriptionDeposited"
             },
             "children": [
@@ -1320,12 +1331,12 @@
                         },
                         "id": 927,
                         "name": "ElementaryTypeName",
-                        "src": "3352:7:2"
+                        "src": "3378:7:2"
                       }
                     ],
                     "id": 928,
                     "name": "VariableDeclaration",
-                    "src": "3352:20:2"
+                    "src": "3378:20:2"
                   },
                   {
                     "attributes": {
@@ -1347,12 +1358,12 @@
                         },
                         "id": 929,
                         "name": "ElementaryTypeName",
-                        "src": "3374:7:2"
+                        "src": "3400:7:2"
                       }
                     ],
                     "id": 930,
                     "name": "VariableDeclaration",
-                    "src": "3374:18:2"
+                    "src": "3400:18:2"
                   },
                   {
                     "attributes": {
@@ -1374,26 +1385,27 @@
                         },
                         "id": 931,
                         "name": "ElementaryTypeName",
-                        "src": "3394:7:2"
+                        "src": "3420:7:2"
                       }
                     ],
                     "id": 932,
                     "name": "VariableDeclaration",
-                    "src": "3394:13:2"
+                    "src": "3420:13:2"
                   }
                 ],
                 "id": 933,
                 "name": "ParameterList",
-                "src": "3351:57:2"
+                "src": "3377:57:2"
               }
             ],
             "id": 934,
             "name": "EventDefinition",
-            "src": "3324:85:2"
+            "src": "3350:85:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev an event fired every time subscription has finished (AFTER succssfull payment AND data update).\nparam subscriber who subscribed\nparam dataSourceName the data source name\nparam dataOwner the owner of the data source\nparam price the price paid for subscription\nparam success true if subscribed successfully",
               "name": "Subscribed"
             },
             "children": [
@@ -1419,12 +1431,12 @@
                         },
                         "id": 935,
                         "name": "ElementaryTypeName",
-                        "src": "3764:7:2"
+                        "src": "3790:7:2"
                       }
                     ],
                     "id": 936,
                     "name": "VariableDeclaration",
-                    "src": "3764:26:2"
+                    "src": "3790:26:2"
                   },
                   {
                     "attributes": {
@@ -1446,12 +1458,12 @@
                         },
                         "id": 937,
                         "name": "ElementaryTypeName",
-                        "src": "3791:7:2"
+                        "src": "3817:7:2"
                       }
                     ],
                     "id": 938,
                     "name": "VariableDeclaration",
-                    "src": "3791:30:2"
+                    "src": "3817:30:2"
                   },
                   {
                     "attributes": {
@@ -1473,12 +1485,12 @@
                         },
                         "id": 939,
                         "name": "ElementaryTypeName",
-                        "src": "3823:7:2"
+                        "src": "3849:7:2"
                       }
                     ],
                     "id": 940,
                     "name": "VariableDeclaration",
-                    "src": "3823:25:2"
+                    "src": "3849:25:2"
                   },
                   {
                     "attributes": {
@@ -1500,12 +1512,12 @@
                         },
                         "id": 941,
                         "name": "ElementaryTypeName",
-                        "src": "3850:4:2"
+                        "src": "3876:4:2"
                       }
                     ],
                     "id": 942,
                     "name": "VariableDeclaration",
-                    "src": "3850:10:2"
+                    "src": "3876:10:2"
                   },
                   {
                     "attributes": {
@@ -1527,26 +1539,27 @@
                         },
                         "id": 943,
                         "name": "ElementaryTypeName",
-                        "src": "3862:4:2"
+                        "src": "3888:4:2"
                       }
                     ],
                     "id": 944,
                     "name": "VariableDeclaration",
-                    "src": "3862:12:2"
+                    "src": "3888:12:2"
                   }
                 ],
                 "id": 945,
                 "name": "ParameterList",
-                "src": "3763:112:2"
+                "src": "3789:112:2"
               }
             ],
             "id": 946,
             "name": "EventDefinition",
-            "src": "3747:129:2"
+            "src": "3773:129:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev triggerd upon a token transfer to provider (before finishing state update)\nparam dataOwner - the owner that got paid \nparam dataSourceName - the name of the data source\nparam amount - the amount transferd from the marketplace contract to the provider",
               "name": "TransferToProvider"
             },
             "children": [
@@ -1572,12 +1585,12 @@
                         },
                         "id": 947,
                         "name": "ElementaryTypeName",
-                        "src": "4179:7:2"
+                        "src": "4205:7:2"
                       }
                     ],
                     "id": 948,
                     "name": "VariableDeclaration",
-                    "src": "4179:25:2"
+                    "src": "4205:25:2"
                   },
                   {
                     "attributes": {
@@ -1599,12 +1612,12 @@
                         },
                         "id": 949,
                         "name": "ElementaryTypeName",
-                        "src": "4206:7:2"
+                        "src": "4232:7:2"
                       }
                     ],
                     "id": 950,
                     "name": "VariableDeclaration",
-                    "src": "4206:30:2"
+                    "src": "4232:30:2"
                   },
                   {
                     "attributes": {
@@ -1626,26 +1639,27 @@
                         },
                         "id": 951,
                         "name": "ElementaryTypeName",
-                        "src": "4238:7:2"
+                        "src": "4264:7:2"
                       }
                     ],
                     "id": 952,
                     "name": "VariableDeclaration",
-                    "src": "4238:14:2"
+                    "src": "4264:14:2"
                   }
                 ],
                 "id": 953,
                 "name": "ParameterList",
-                "src": "4178:75:2"
+                "src": "4204:75:2"
               }
             ],
             "id": 954,
             "name": "EventDefinition",
-            "src": "4154:100:2"
+            "src": "4180:100:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev triggerd when the provider finished the withdraw (TransferToProvider event + state update)\nparam dataOwner - the owner that withdrawed\nparam dataSourceName - name of the data source\nparam amount - the amount withdrawed",
               "name": "ProviderWithdraw"
             },
             "children": [
@@ -1671,12 +1685,12 @@
                         },
                         "id": 955,
                         "name": "ElementaryTypeName",
-                        "src": "4523:7:2"
+                        "src": "4549:7:2"
                       }
                     ],
                     "id": 956,
                     "name": "VariableDeclaration",
-                    "src": "4523:25:2"
+                    "src": "4549:25:2"
                   },
                   {
                     "attributes": {
@@ -1698,12 +1712,12 @@
                         },
                         "id": 957,
                         "name": "ElementaryTypeName",
-                        "src": "4550:7:2"
+                        "src": "4576:7:2"
                       }
                     ],
                     "id": 958,
                     "name": "VariableDeclaration",
-                    "src": "4550:30:2"
+                    "src": "4576:30:2"
                   },
                   {
                     "attributes": {
@@ -1725,26 +1739,27 @@
                         },
                         "id": 959,
                         "name": "ElementaryTypeName",
-                        "src": "4582:4:2"
+                        "src": "4608:4:2"
                       }
                     ],
                     "id": 960,
                     "name": "VariableDeclaration",
-                    "src": "4582:11:2"
+                    "src": "4608:11:2"
                   }
                 ],
                 "id": 961,
                 "name": "ParameterList",
-                "src": "4522:72:2"
+                "src": "4548:72:2"
               }
             ],
             "id": 962,
             "name": "EventDefinition",
-            "src": "4500:95:2"
+            "src": "4526:95:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev triggerd when punishment status changed (true = punished, false = not punished)\nparam dataOwner - the provider \nparam dataSourceName - the name of the data source \nparam isPunished - the status current status AFTER the change",
               "name": "ProviderPunishStatus"
             },
             "children": [
@@ -1770,12 +1785,12 @@
                         },
                         "id": 963,
                         "name": "ElementaryTypeName",
-                        "src": "4884:7:2"
+                        "src": "4910:7:2"
                       }
                     ],
                     "id": 964,
                     "name": "VariableDeclaration",
-                    "src": "4884:25:2"
+                    "src": "4910:25:2"
                   },
                   {
                     "attributes": {
@@ -1797,12 +1812,12 @@
                         },
                         "id": 965,
                         "name": "ElementaryTypeName",
-                        "src": "4911:7:2"
+                        "src": "4937:7:2"
                       }
                     ],
                     "id": 966,
                     "name": "VariableDeclaration",
-                    "src": "4911:30:2"
+                    "src": "4937:30:2"
                   },
                   {
                     "attributes": {
@@ -1824,26 +1839,27 @@
                         },
                         "id": 967,
                         "name": "ElementaryTypeName",
-                        "src": "4943:4:2"
+                        "src": "4969:4:2"
                       }
                     ],
                     "id": 968,
                     "name": "VariableDeclaration",
-                    "src": "4943:15:2"
+                    "src": "4969:15:2"
                   }
                 ],
                 "id": 969,
                 "name": "ParameterList",
-                "src": "4883:76:2"
+                "src": "4909:76:2"
               }
             ],
             "id": 970,
             "name": "EventDefinition",
-            "src": "4857:103:2"
+            "src": "4883:103:2"
           },
           {
             "attributes": {
               "anonymous": false,
+              "documentation": "dev triggerd when the subscriber got a refund (punished provider)\nparam subscriber - the refunded address\nparam dataSourceName - name of the data source\nparam amount - the amount of the refund",
               "name": "SubscriberRefund"
             },
             "children": [
@@ -1869,12 +1885,12 @@
                         },
                         "id": 971,
                         "name": "ElementaryTypeName",
-                        "src": "5202:7:2"
+                        "src": "5228:7:2"
                       }
                     ],
                     "id": 972,
                     "name": "VariableDeclaration",
-                    "src": "5202:26:2"
+                    "src": "5228:26:2"
                   },
                   {
                     "attributes": {
@@ -1896,12 +1912,12 @@
                         },
                         "id": 973,
                         "name": "ElementaryTypeName",
-                        "src": "5229:7:2"
+                        "src": "5255:7:2"
                       }
                     ],
                     "id": 974,
                     "name": "VariableDeclaration",
-                    "src": "5229:30:2"
+                    "src": "5255:30:2"
                   },
                   {
                     "attributes": {
@@ -1923,38 +1939,38 @@
                         },
                         "id": 975,
                         "name": "ElementaryTypeName",
-                        "src": "5261:7:2"
+                        "src": "5287:7:2"
                       }
                     ],
                     "id": 976,
                     "name": "VariableDeclaration",
-                    "src": "5261:20:2"
+                    "src": "5287:20:2"
                   }
                 ],
                 "id": 977,
                 "name": "ParameterList",
-                "src": "5201:81:2"
+                "src": "5227:81:2"
               }
             ],
             "id": 978,
             "name": "EventDefinition",
-            "src": "5179:104:2"
+            "src": "5205:104:2"
           }
         ],
         "id": 979,
         "name": "ContractDefinition",
-        "src": "129:5156:2"
+        "src": "155:5156:2"
       }
     ],
     "id": 980,
     "name": "SourceUnit",
-    "src": "0:5285:2"
+    "src": "26:5285:2"
   },
   "compiler": {
     "name": "solc",
-    "version": "0.4.18+commit.9cf6e910.Emscripten.clang"
+    "version": "0.4.21+commit.dfe3193c.Emscripten.clang"
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-02-10T15:34:48.740Z"
+  "updatedAt": "2018-03-11T10:23:04.308Z"
 }

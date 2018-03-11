@@ -1,4 +1,5 @@
-pragma solidity 0.4.18;
+//pragma solidity 0.4.18;
+pragma solidity ^0.4.21;
 
 
 import "./IMarketplace.sol";
@@ -28,7 +29,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
             mProviders[_dataSourceName].punishTimeStamp = 0;
             mProviders[_dataSourceName].isActive = true;
         }
-        ProviderPunishStatus(mProviders[_dataSourceName].owner,_dataSourceName,_isPunished);
+        emit ProviderPunishStatus(mProviders[_dataSourceName].owner,_dataSourceName,_isPunished);
         success = true;
     }
 
@@ -49,7 +50,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
             }
         }
         require(safeToSubscriberTransfer(msg.sender,refundAmount));
-        SubscriberRefund(msg.sender,_dataSourceName,refundAmount);
+        emit SubscriberRefund(msg.sender,_dataSourceName,refundAmount);
         success = true;
     }
     function getRefundAmount(address _subscriber , bytes32 _dataSourceName) 
@@ -85,7 +86,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         }
         // transfer ENG's to the provider -revert state if faild
         require(safeToProviderTransfer(_dataSourceName,withdrawAmount)); 
-        ProviderWithdraw(mProviders[_dataSourceName].owner,_dataSourceName,withdrawAmount);
+        emit ProviderWithdraw(mProviders[_dataSourceName].owner,_dataSourceName,withdrawAmount);
         return true;
     }
     function getWithdrawAmount(bytes32 _dataSourceName) 
@@ -120,7 +121,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         mProviders[mCurrent].nextProvider = _dataSourceName;
         mCurrent = mProviders[_dataSourceName].name;
         mProvidersSize = mProvidersSize.add(1);
-        Registered(_dataOwner,_dataSourceName,_price,true);
+        emit Registered(_dataOwner,_dataSourceName,_price,true);
         success =  true;
     }
     function subscribe(bytes32 _dataSourceName) 
@@ -143,7 +144,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
         // update provider data 
         mProviders[_dataSourceName].volume = mProviders[_dataSourceName].volume.add(mProviders[_dataSourceName].price);
         mProviders[_dataSourceName].subscriptionsNum = mProviders[_dataSourceName].subscriptionsNum.add(1);
-        Subscribed(msg.sender,
+        emit Subscribed(msg.sender,
             _dataSourceName,
             mProviders[_dataSourceName].owner,
             mProviders[_dataSourceName].price,
@@ -203,7 +204,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
          require(_from != address(0) && _to == address(this));
          require(mToken.allowance(_from,_to) >= _amount);
          require(mToken.transferFrom(_from,_to,_amount));
-         SubscriptionDeposited(_from, _to, _amount);
+         emit SubscriptionDeposited(_from, _to, _amount);
          return true;
     }
     function safeToProviderTransfer(bytes32 _dataSourceName,uint256 _amount) 
@@ -214,7 +215,7 @@ contract Marketplace is IMarketplace,BasicMarketplace{
          require(_amount > 0);
          require(mProviders[_dataSourceName].owner != address(0));
          require(mToken.transfer(mProviders[_dataSourceName].owner,_amount));
-         TransferToProvider(mProviders[_dataSourceName].owner,_dataSourceName,_amount);
+         emit TransferToProvider(mProviders[_dataSourceName].owner,_dataSourceName,_amount);
          return true;
      }
     function safeToSubscriberTransfer(address _subscriber,uint256 _amount) 

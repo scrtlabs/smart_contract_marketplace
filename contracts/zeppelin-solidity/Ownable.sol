@@ -1,5 +1,4 @@
-pragma solidity 0.4.18;
-
+pragma solidity ^0.4.21;
 /**
  * @title Ownable
  * @dev The Ownable contract has an owner address, and provides basic authorization control
@@ -34,7 +33,7 @@ contract Ownable {
    */
   function transferOwnership(address _newOwner) public onlyOwner {
     require(_newOwner != address(0));
-    OwnershipTransferred(mOwner, _newOwner);
+    emit OwnershipTransferred(mOwner, _newOwner);
     mOwner = _newOwner;
   }
 }
