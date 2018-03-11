@@ -2,7 +2,7 @@
 
 The documentation for the Enigma Data Marketplace Smart Contract is available at https://enigmampc.github.io/marketplace/smart-contract.html.
 
-The contract is made out of few smaller contracts. The api is split between 2 interfaces with full documentation:
+The contract is made out of few smaller contracts. The api is split between 3 interfaces with full documentation:
 
 1. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IBasicMarketplace.sol
 2. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IMarketplace.sol
