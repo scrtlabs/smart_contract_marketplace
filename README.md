@@ -6,6 +6,7 @@ The contract is made out of few smaller contracts. The api is split between 2 in
 
 1. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IBasicMarketplace.sol
 2. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IMarketplace.sol
+3. https://github.com/enigmampc/smart_contract_marketplace/blob/master/contracts/IRecoverableMarketplace.sol
 
 ## Getting Started
 
