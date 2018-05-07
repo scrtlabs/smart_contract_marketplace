@@ -53,7 +53,8 @@ To run Truffle tests
 
 
 ```
-truffle test
+$ truffle deelop
+truffle(develop)> test
 ```
 
 
@@ -353,3 +354,28 @@ async function forEachProvider(callback){
 * [Ganache](http://truffleframework.com/ganache/) -Test network
 * [Truffle](http://truffleframework.com/) - Testing and deployment.
 
+## Troubleshooting
+
+Right after cloning the repository, you may encounter an error like the following when launching truffle:
+```
+$ truffle develop
+Error: dlopen(smart_contract_marketplace/node_modules/scrypt/build/Release/scrypt.node, 1): no suitable image found.  Did find:
+    smart_contract_marketplace/node_modules/scrypt/build/Release/scrypt.node: unknown file type, first eight bytes: 0x7F 0x45 0x4C 0x46 0x02 0x01 0x01 0x00
+    smart_contract_marketplace/node_modules/scrypt/build/Release/scrypt.node: unknown file type, first eight bytes: 0x7F 0x45 0x4C 0x46 0x02 0x01 0x01 0x00
+   at Object.Module._extensions..node (module.js:664:18)
+   at Module.load (module.js:554:32)
+   at tryModuleLoad (module.js:497:12)
+   at Function.Module._load (module.js:489:3)
+   at Module.require (module.js:579:17)
+   at require (internal/module.js:11:18)
+   at Object.<anonymous> (/Users/adityapalepu/Startups/enigma/smart_contract_marketplace/node_modules/scrypt/index.js:3:20)
+   at Module._compile (module.js:635:30)
+   at Object.Module._extensions..js (module.js:646:10)
+   at Module.load (module.js:554:32)
+```
+
+which can be fixed by removing and reinstalling the problematic node module:
+```
+$ rm -rf node_modules/scrypt
+$ npm install
+```
