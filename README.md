@@ -53,7 +53,7 @@ To run Truffle tests
 
 
 ```
-$ truffle deelop
+$ truffle develop
 truffle(develop)> test
 ```
 
@@ -114,11 +114,13 @@ const MarketPlaceContract = config.MarketPlaceContract;
 
 let gas = 740000; // some gas limit
 let theOwner = web3.eth.accounts[0];
+
 // provider 
 var _provider = {};
 _provider.address = web3.eth.accounts[1];
 _provider.dataName = "Data1";
 _provider.price = 1500;
+
 //subscriber 
 var _subscriber = {};
 _subscriber.address = web3.eth.accounts[2];
